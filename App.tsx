@@ -277,7 +277,19 @@ const App = () => {
         
         setShowImportModal(false);
     } catch (error) {
-        alert("Failed to parse resume. Please try again or enter details manually.");
+        const fallbackMessage = "Failed to parse resume. Please try again or enter details manually.";
+        let userMessage = fallbackMessage;
+
+        if (error instanceof Error) {
+          const errorMessage = error.message.toLowerCase();
+          if (errorMessage.includes("gemini_api_key") || errorMessage.includes("api key")) {
+            userMessage = "AI import needs a Gemini API key. Add GEMINI_API_KEY or use 'Paste Text' in the import modal.";
+          } else if (errorMessage.includes("empty")) {
+            userMessage = "No resume content found. Please upload a valid file or paste your resume text.";
+          }
+        }
+
+        alert(userMessage);
         console.error(error);
     } finally {
         setLoadingAI(null);

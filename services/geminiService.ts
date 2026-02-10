@@ -28,6 +28,119 @@ const hasApiKey = (): boolean => resolveApiKey().length > 0;
 
 const modelId = 'gemini-3-flash-preview';
 
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const parseJsonFromText = <T>(rawText: string): T => {
+  const text = rawText.trim();
+  const candidates: string[] = [text];
+
+  const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fencedMatch?.[1]) candidates.push(fencedMatch[1].trim());
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    candidates.push(text.slice(firstBrace, lastBrace + 1).trim());
+  }
+
+  const firstBracket = text.indexOf("[");
+  const lastBracket = text.lastIndexOf("]");
+  if (firstBracket !== -1 && lastBracket > firstBracket) {
+    candidates.push(text.slice(firstBracket, lastBracket + 1).trim());
+  }
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate) as T;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  throw new Error("AI returned invalid JSON.");
+};
+
+const getSectionLines = (content: string, headings: string[]): string[] => {
+  const rawLines = content.replace(/\r/g, "").split("\n").map((line) => line.trim());
+  const headingRegex = new RegExp(
+    `^(${headings.map(escapeRegExp).join("|")})\\s*:?$`,
+    "i"
+  );
+  const startIndex = rawLines.findIndex((line) => headingRegex.test(line));
+  if (startIndex === -1) return [];
+
+  const lines: string[] = [];
+  for (let i = startIndex + 1; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    if (!line) {
+      if (lines.length > 0) break;
+      continue;
+    }
+
+    const looksLikeHeading =
+      /^[A-Za-z][A-Za-z /&-]{2,40}:?$/.test(line) && !/^(?:•|-|\d+\.)/.test(line);
+    if (looksLikeHeading && lines.length > 0) break;
+
+    lines.push(line);
+  }
+  return lines;
+};
+
+const parseSkillsFromText = (content: string): Skill[] => {
+  const sectionLines = getSectionLines(content, ["skills", "technical skills", "core skills"]);
+  if (sectionLines.length === 0) return [];
+
+  const raw = sectionLines.join(" ");
+  return raw
+    .split(/[,|]/)
+    .map((skill) => skill.trim())
+    .filter(Boolean)
+    .slice(0, 20)
+    .map((name) => ({ id: crypto.randomUUID(), name, level: "Intermediate" as const }));
+};
+
+const parseResumeTextLocally = (content: string): Partial<ResumeData> => {
+  const text = content.trim();
+  const lines = text
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const firstLine = lines[0] || "";
+  const secondLine = lines[1] || "";
+
+  const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  const phoneMatch = text.match(/(?:\+?\d[\d\s\-()]{7,}\d)/);
+  const linkedInMatch = text.match(/https?:\/\/(?:www\.)?linkedin\.com\/[^\s)]+/i);
+  const urlMatches = text.match(/https?:\/\/[^\s)]+/gi) || [];
+  const website = urlMatches.find(
+    (url) => !/linkedin\.com/i.test(url)
+  ) || "";
+
+  const summaryLines = getSectionLines(text, ["summary", "professional summary", "profile"]);
+  const summary = summaryLines.join(" ").slice(0, 800);
+
+  const skills = parseSkillsFromText(text);
+
+  return {
+    personalInfo: {
+      fullName: firstLine,
+      email: emailMatch?.[0] || "",
+      phone: phoneMatch?.[0] || "",
+      location: "",
+      linkedin: linkedInMatch?.[0] || "",
+      website,
+      summary,
+      jobTitle: secondLine && !/@/.test(secondLine) ? secondLine : "",
+    },
+    experience: [],
+    education: [],
+    skills,
+  };
+};
+
 export const generateSummary = async (info: PersonalInfo, experiences: Experience[]): Promise<string> => {
   if (!hasApiKey()) return "API Key missing. Please configure your environment.";
   const ai = getAiClient();
@@ -117,7 +230,7 @@ export const suggestSkills = async (jobTitle: string, description: string): Prom
     
     const text = response.text;
     if (!text) return [];
-    return JSON.parse(text) as string[];
+    return parseJsonFromText<string[]>(text);
   } catch (error) {
     console.error("AI Error:", error);
     return [];
@@ -125,7 +238,16 @@ export const suggestSkills = async (jobTitle: string, description: string): Prom
 };
 
 export const parseResumeContent = async (content: string, mimeType: string = 'text/plain'): Promise<Partial<ResumeData>> => {
-    if (!hasApiKey()) throw new Error("API Key missing");
+    if (!content.trim()) {
+      throw new Error("Resume content is empty.");
+    }
+
+    if (!hasApiKey()) {
+      if (mimeType === "text/plain") {
+        return parseResumeTextLocally(content);
+      }
+      throw new Error("Importing PDF/image requires a GEMINI_API_KEY. Use 'Paste Text' or configure API key.");
+    }
     const ai = getAiClient();
     if (!ai) throw new Error("AI client failed to initialize");
 
@@ -173,9 +295,9 @@ export const parseResumeContent = async (content: string, mimeType: string = 'te
         });
 
         const text = response.text;
-        if (!text) return {};
+        if (!text) throw new Error("AI returned an empty response.");
         
-        const parsed = JSON.parse(text);
+        const parsed = parseJsonFromText<any>(text);
         
         // Post-process to ensure IDs exist
         if (parsed.experience) {
@@ -192,6 +314,9 @@ export const parseResumeContent = async (content: string, mimeType: string = 'te
 
     } catch (error) {
         console.error("Parsing Error:", error);
+        if (mimeType === "text/plain") {
+          return parseResumeTextLocally(content);
+        }
         throw error;
     }
 };
