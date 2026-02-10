@@ -1,11 +1,37 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Experience, PersonalInfo, ResumeData, Education, Skill } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const resolveApiKey = (): string =>
+  (process.env.API_KEY || process.env.GEMINI_API_KEY || "").trim();
+
+let cachedAi: GoogleGenAI | null | undefined;
+const getAiClient = (): GoogleGenAI | null => {
+  if (cachedAi !== undefined) return cachedAi;
+
+  const apiKey = resolveApiKey();
+  if (!apiKey) {
+    cachedAi = null;
+    return cachedAi;
+  }
+
+  try {
+    cachedAi = new GoogleGenAI({ apiKey });
+  } catch (error) {
+    console.error("AI init error:", error);
+    cachedAi = null;
+  }
+
+  return cachedAi;
+};
+
+const hasApiKey = (): boolean => resolveApiKey().length > 0;
+
 const modelId = 'gemini-3-flash-preview';
 
 export const generateSummary = async (info: PersonalInfo, experiences: Experience[]): Promise<string> => {
-  if (!process.env.API_KEY) return "API Key missing. Please configure your environment.";
+  if (!hasApiKey()) return "API Key missing. Please configure your environment.";
+  const ai = getAiClient();
+  if (!ai) return "AI service is not available right now.";
 
   const jobHistory = experiences.map(e => `${e.position} at ${e.company}`).join(', ');
   
@@ -34,7 +60,9 @@ export const generateSummary = async (info: PersonalInfo, experiences: Experienc
 };
 
 export const enhanceExperienceDescription = async (position: string, company: string, currentDesc: string): Promise<string> => {
-  if (!process.env.API_KEY) return "API Key missing.";
+  if (!hasApiKey()) return "API Key missing.";
+  const ai = getAiClient();
+  if (!ai) return currentDesc;
 
   const prompt = `
     Rewrite and improve the following job description bullet points for a resume.
@@ -63,7 +91,9 @@ export const enhanceExperienceDescription = async (position: string, company: st
 };
 
 export const suggestSkills = async (jobTitle: string, description: string): Promise<string[]> => {
-  if (!process.env.API_KEY) return ["Communication", "Teamwork", "Problem Solving"];
+  if (!hasApiKey()) return ["Communication", "Teamwork", "Problem Solving"];
+  const ai = getAiClient();
+  if (!ai) return ["Communication", "Teamwork", "Problem Solving"];
 
   const prompt = `
     Suggest 10 relevant hard and soft skills for a ${jobTitle}.
@@ -95,7 +125,9 @@ export const suggestSkills = async (jobTitle: string, description: string): Prom
 };
 
 export const parseResumeContent = async (content: string, mimeType: string = 'text/plain'): Promise<Partial<ResumeData>> => {
-    if (!process.env.API_KEY) throw new Error("API Key missing");
+    if (!hasApiKey()) throw new Error("API Key missing");
+    const ai = getAiClient();
+    if (!ai) throw new Error("AI client failed to initialize");
 
     const prompt = `
       Extract resume data from the provided document and return it in the following JSON structure.
