@@ -8,9 +8,9 @@ CVWizard is an AI-powered resume builder that helps users create polished, ATS-f
 
 ## Preview
 
-<video src="./preview.mp4" controls muted width="100%"></video>
+[![Watch CVWizard Preview](./preview-cover.svg)](./preview.mp4)
 
-If the embedded player does not render, open [`preview.mp4`](./preview.mp4).
+Click the image above to watch [`preview.mp4`](./preview.mp4).
 
 ## Key Features
 
