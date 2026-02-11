@@ -453,13 +453,13 @@ const App = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputGroup label="Full Name" value={resumeData.personalInfo.fullName} onChange={(v) => updatePersonalInfo('fullName', v)} placeholder="John Doe" />
+              <InputGroup label="Full Name" value={resumeData.personalInfo.fullName} onChange={(v) => updatePersonalInfo('fullName', v)} placeholder="Joe" />
               <InputGroup label="Target Job Title" value={resumeData.personalInfo.jobTitle} onChange={(v) => updatePersonalInfo('jobTitle', v)} placeholder="Software Engineer" />
-              <InputGroup label="Email" type="email" value={resumeData.personalInfo.email} onChange={(v) => updatePersonalInfo('email', v)} placeholder="john@example.com" />
+              <InputGroup label="Email" type="email" value={resumeData.personalInfo.email} onChange={(v) => updatePersonalInfo('email', v)} placeholder="joe@example.com" />
               <InputGroup label="Phone" value={resumeData.personalInfo.phone} onChange={(v) => updatePersonalInfo('phone', v)} placeholder="+1 555 123 4567" />
-              <InputGroup label="Location" value={resumeData.personalInfo.location} onChange={(v) => updatePersonalInfo('location', v)} placeholder="San Francisco, CA" />
-              <InputGroup label="LinkedIn URL" value={resumeData.personalInfo.linkedin} onChange={(v) => updatePersonalInfo('linkedin', v)} placeholder="linkedin.com/in/johndoe" />
-              <InputGroup label="Portfolio Website" value={resumeData.personalInfo.website} onChange={(v) => updatePersonalInfo('website', v)} placeholder="johndoe.com" />
+              <InputGroup label="Location" value={resumeData.personalInfo.location} onChange={(v) => updatePersonalInfo('location', v)} placeholder="Grace Leo Home, GG" />
+              <InputGroup label="LinkedIn URL" value={resumeData.personalInfo.linkedin} onChange={(v) => updatePersonalInfo('linkedin', v)} placeholder="linkedin.com/in/joe" />
+              <InputGroup label="Portfolio Website" value={resumeData.personalInfo.website} onChange={(v) => updatePersonalInfo('website', v)} placeholder="joeportfolio.com" />
             </div>
             
             <div className="relative">
@@ -504,7 +504,7 @@ const App = () => {
                   <Trash2 size={18} />
                 </button>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <InputGroup label="Company" value={exp.company} onChange={(v) => updateExperience(exp.id, 'company', v)} placeholder="Acme Inc" />
+                  <InputGroup label="Company" value={exp.company} onChange={(v) => updateExperience(exp.id, 'company', v)} placeholder="Beacon Academy" />
                   <InputGroup label="Position" value={exp.position} onChange={(v) => updateExperience(exp.id, 'position', v)} placeholder="Senior Developer" />
                   <InputGroup label="Start Date" value={exp.startDate} onChange={(v) => updateExperience(exp.id, 'startDate', v)} placeholder="MM/YYYY" />
                   <div className="flex flex-col">
