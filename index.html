@@ -58,6 +58,15 @@
         nav, .no-print, button, .wizard-col {
           display: none !important;
         }
+
+        /* Ensure the preview column is visible in print even when hidden on mobile layout */
+        .print-layout {
+          display: flex !important;
+          position: static !important;
+          overflow: visible !important;
+          background: transparent !important;
+          padding: 0 !important;
+        }
       }
     </style>
   <script type="importmap">

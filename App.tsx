@@ -811,7 +811,7 @@ const App = () => {
           </div>
 
           {/* Preview Column */}
-          <div className={`lg:col-span-7 flex flex-col items-center print-layout ${isPreviewMode ? 'flex fixed inset-0 z-50 bg-gray-900 p-4 overflow-auto' : 'hidden lg:flex'}`}>
+          <div className={`lg:col-span-7 flex flex-col items-center print-layout print:!flex print:!static print:!inset-auto print:!z-auto print:!bg-transparent print:!p-0 print:!overflow-visible ${isPreviewMode ? 'flex fixed inset-0 z-50 bg-gray-900 p-4 overflow-auto' : 'hidden lg:flex'}`}>
              {isPreviewMode && (
                <button 
                 onClick={() => setIsPreviewMode(false)}
