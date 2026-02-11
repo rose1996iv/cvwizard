@@ -3,10 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  workflow_run:
-    workflows: ["pages build and deployment"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -46,5 +42,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Wait for branch-based Pages publish to finish
+        run: sleep 90
       - id: deployment
         uses: actions/deploy-pages@v4
