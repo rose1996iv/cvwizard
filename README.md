@@ -6,6 +6,12 @@ CVWizard is an AI-powered resume builder that helps users create polished, ATS-f
 
 `https://joseph1997-eng.github.io/cvwizard/`
 
+## Preview
+
+<video src="./preview.mp4" controls muted width="100%"></video>
+
+If the embedded player does not render, open [`preview.mp4`](./preview.mp4).
+
 ## Key Features
 
 - Step-by-step resume builder (personal info, experience, education, skills, custom sections)
