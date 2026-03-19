@@ -61,6 +61,7 @@ export interface Theme {
   showProfile: boolean;
   profileShape: 'circle' | 'square' | 'rounded';
   profileSize: 'sm' | 'md' | 'lg';
+  profileZoom: number; // 0.5 to 2.0
   showIcons: boolean;
   compactMode: boolean;
 }

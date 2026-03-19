@@ -49,6 +49,10 @@ const App = () => {
         if (parsed.theme && !parsed.theme.profileShape) {
           parsed.theme.profileShape = 'circle';
           parsed.theme.profileSize = 'md';
+          parsed.theme.profileZoom = 1.0;
+        }
+        if (parsed.theme && parsed.theme.profileZoom === undefined) {
+          parsed.theme.profileZoom = 1.0;
         }
         return parsed;
       } catch (e) {
@@ -81,6 +85,7 @@ const App = () => {
         showProfile: true,
         profileShape: 'circle',
         profileSize: 'md',
+        profileZoom: 1.0,
         showIcons: true,
         compactMode: false,
       },

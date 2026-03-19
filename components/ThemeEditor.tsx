@@ -232,6 +232,22 @@ export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange, langu
                         ))}
                      </div>
                    </div>
+
+                   <div className="pt-2">
+                     <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">{language === 'en' ? 'Zoom' : 'ဇူးမ်ချဲ့ရန်'}</span>
+                        <span className="text-[10px] font-bold text-blue-600">{Math.round(theme.profileZoom * 100)}%</span>
+                     </div>
+                     <input 
+                       type="range"
+                       min="0.5"
+                       max="2.5"
+                       step="0.1"
+                       value={theme.profileZoom}
+                       onChange={(e) => onChange('profileZoom', parseFloat(e.target.value))}
+                       className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                     />
+                   </div>
                  </>
                )}
             </div>

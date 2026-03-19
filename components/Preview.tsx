@@ -199,12 +199,14 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
 
       {personalInfo.profileImage && theme.showProfile && (
         <div className="flex-shrink-0">
-           <img 
-             src={personalInfo.profileImage} 
-             alt="Profile" 
-             className={`${getProfileSizeClass()} object-cover shadow-lg ${getProfileShapeClass()} border-4 border-white`}
-             style={templateId !== 'creative' ? { borderColor: primaryColor } : {}}
-           />
+           <div className={`${getProfileSizeClass()} ${getProfileShapeClass()} overflow-hidden border-4 border-white shadow-lg relative`} style={{ borderColor: primaryColor }}>
+             <img 
+               src={personalInfo.profileImage} 
+               alt="Profile" 
+               className="w-full h-full object-cover transition-transform duration-200"
+               style={{ transform: `scale(${theme.profileZoom || 1})` }}
+             />
+           </div>
         </div>
       )}
     </header>
