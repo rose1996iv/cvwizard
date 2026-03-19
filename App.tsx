@@ -87,6 +87,7 @@ const App = () => {
   const [coverLetter, setCoverLetter] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [inspectorTab, setInspectorTab] = useState<'preview' | 'design' | 'export'>('preview');
   
   // Ref for auto-scrolling to new items
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -200,6 +201,20 @@ const App = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+  }, [step]);
+
+  useEffect(() => {
+    if (step === WizardStep.THEME) {
+      setInspectorTab('design');
+      return;
+    }
+
+    if (step === WizardStep.FINALIZE) {
+      setInspectorTab('export');
+      return;
+    }
+
+    setInspectorTab('preview');
   }, [step]);
 
   const t = translations[resumeData.language || 'en'];
@@ -549,13 +564,13 @@ const App = () => {
   };
 
   const stepItems = [
-    { id: WizardStep.PERSONAL, icon: User, label: t.personal, caption: resumeData.language === 'en' ? 'Identity and role targeting' : 'အမည်နှင့် ရည်မှန်းထားသည့်ရာထူး' },
-    { id: WizardStep.EXPERIENCE, icon: Briefcase, label: t.experience, caption: resumeData.language === 'en' ? 'Achievement-based history' : 'လုပ်ငန်းအတွေ့အကြုံနှင့် ရလဒ်များ' },
-    { id: WizardStep.EDUCATION, icon: GraduationCap, label: t.education, caption: resumeData.language === 'en' ? 'Academic signal' : 'ပညာရေး နောက်ခံ' },
-    { id: WizardStep.SKILLS, icon: Wrench, label: t.skills, caption: resumeData.language === 'en' ? 'Capability mapping' : 'ကျွမ်းကျင်မှု များဖော်ပြခြင်း' },
+    { id: WizardStep.PERSONAL, icon: User, label: t.personal, caption: resumeData.language === 'en' ? 'Identity and role targeting' : 'á€¡á€™á€Šá€ºá€”á€¾á€„á€·á€º á€›á€Šá€ºá€™á€¾á€”á€ºá€¸á€‘á€¬á€¸á€žá€Šá€·á€ºá€›á€¬á€‘á€°á€¸' },
+    { id: WizardStep.EXPERIENCE, icon: Briefcase, label: t.experience, caption: resumeData.language === 'en' ? 'Achievement-based history' : 'á€œá€¯á€•á€ºá€„á€”á€ºá€¸á€¡á€á€½á€±á€·á€¡á€€á€¼á€¯á€¶á€”á€¾á€„á€·á€º á€›á€œá€’á€ºá€™á€»á€¬á€¸' },
+    { id: WizardStep.EDUCATION, icon: GraduationCap, label: t.education, caption: resumeData.language === 'en' ? 'Academic signal' : 'á€•á€Šá€¬á€›á€±á€¸ á€”á€±á€¬á€€á€ºá€á€¶' },
+    { id: WizardStep.SKILLS, icon: Wrench, label: t.skills, caption: resumeData.language === 'en' ? 'Capability mapping' : 'á€€á€»á€½á€™á€ºá€¸á€€á€»á€„á€ºá€™á€¾á€¯ á€™á€»á€¬á€¸á€–á€±á€¬á€ºá€•á€¼á€á€¼á€„á€ºá€¸' },
     { id: WizardStep.CUSTOM, icon: Layers, label: t.custom, caption: resumeData.language === 'en' ? 'Awards, projects, certifications' : 'Projects, Awards, Certifications' },
-    { id: WizardStep.THEME, icon: Edit3, label: t.theme, caption: resumeData.language === 'en' ? 'Brand, typography, density' : 'Design, Font နှင့် Layout' },
-    { id: WizardStep.FINALIZE, icon: Download, label: t.finalize, caption: resumeData.language === 'en' ? 'Export and delivery' : 'ထုတ်ယူရန်နှင့် အပြီးသတ်ရန်' },
+    { id: WizardStep.THEME, icon: Edit3, label: t.theme, caption: resumeData.language === 'en' ? 'Brand, typography, density' : 'Design, Font á€”á€¾á€„á€·á€º Layout' },
+    { id: WizardStep.FINALIZE, icon: Download, label: t.finalize, caption: resumeData.language === 'en' ? 'Export and delivery' : 'á€‘á€¯á€á€ºá€šá€°á€›á€”á€ºá€”á€¾á€„á€·á€º á€¡á€•á€¼á€®á€¸á€žá€á€ºá€›á€”á€º' },
   ];
 
   const currentStepMeta = stepItems.find((item) => item.id === step) || stepItems[0];
@@ -571,26 +586,32 @@ const App = () => {
   const activeDocumentName = resumeData.personalInfo.fullName || (resumeData.docType === 'cv' ? 'Untitled CV' : 'Untitled Resume');
   const savedStatusLabel = user
     ? lastSaved
-      ? `${resumeData.language === 'en' ? 'Saved' : 'သိမ်းပြီး'} ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+      ? `${resumeData.language === 'en' ? 'Saved' : 'á€žá€­á€™á€ºá€¸á€•á€¼á€®á€¸'} ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
       : resumeData.language === 'en'
         ? 'Cloud sync ready'
-        : 'Cloud sync အဆင်သင့်'
+        : 'Cloud sync á€¡á€†á€„á€ºá€žá€„á€·á€º'
     : resumeData.language === 'en'
       ? 'Local draft'
       : 'Local draft';
   const missingSignals = [
-    !resumeData.personalInfo.fullName && (resumeData.language === 'en' ? 'Candidate name' : 'အမည်'),
-    !resumeData.personalInfo.jobTitle && (resumeData.language === 'en' ? 'Target role' : 'ရာထူး'),
+    !resumeData.personalInfo.fullName && (resumeData.language === 'en' ? 'Candidate name' : 'á€¡á€™á€Šá€º'),
+    !resumeData.personalInfo.jobTitle && (resumeData.language === 'en' ? 'Target role' : 'á€›á€¬á€‘á€°á€¸'),
     !resumeData.personalInfo.summary && (resumeData.language === 'en' ? 'Professional summary' : 'Summary'),
-    resumeData.experience.length === 0 && (resumeData.language === 'en' ? 'Work experience' : 'အတွေ့အကြုံ'),
-    resumeData.skills.length === 0 && (resumeData.language === 'en' ? 'Skills' : 'ကျွမ်းကျင်မှုများ'),
+    resumeData.experience.length === 0 && (resumeData.language === 'en' ? 'Work experience' : 'á€¡á€á€½á€±á€·á€¡á€€á€¼á€¯á€¶'),
+    resumeData.skills.length === 0 && (resumeData.language === 'en' ? 'Skills' : 'á€€á€»á€½á€™á€ºá€¸á€€á€»á€„á€ºá€™á€¾á€¯á€™á€»á€¬á€¸'),
   ].filter(Boolean) as string[];
   const editorStats = [
-    { label: resumeData.language === 'en' ? 'Completion' : 'ပြီးစီးမှု', value: `${completionPercent}%` },
+    { label: resumeData.language === 'en' ? 'Completion' : 'á€•á€¼á€®á€¸á€…á€®á€¸á€™á€¾á€¯', value: `${completionPercent}%` },
     { label: resumeData.language === 'en' ? 'Experience' : 'Experience', value: `${resumeData.experience.length}` },
     { label: resumeData.language === 'en' ? 'Skills' : 'Skills', value: `${resumeData.skills.length}` },
     { label: resumeData.language === 'en' ? 'Variants' : 'Documents', value: `${Math.max(savedResumes.length, activeResumeId ? 1 : 0)}` },
   ];
+  const inspectorTabs = [
+    { id: 'preview' as const, label: resumeData.language === 'en' ? 'Preview' : 'Preview', icon: Grid },
+    { id: 'design' as const, label: resumeData.language === 'en' ? 'Design' : 'Design', icon: Settings },
+    { id: 'export' as const, label: resumeData.language === 'en' ? 'Deliver' : 'Deliver', icon: Download },
+  ];
+  const studioDocuments = savedResumes.slice(0, 5);
 
   const Steps = () => (
     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
@@ -629,7 +650,7 @@ const App = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
                 <div>
                    <h2 className="text-2xl font-bold text-gray-800">{t.basics}</h2>
-                   <p className="text-gray-500 text-sm mt-1">{resumeData.language === 'en' ? 'Fill in your details or import from an existing resume.' : 'အချက်အလက်များကို ဖြည့်စွက်ပါ (သို့မဟုတ်) ရှိပြီးသား CV မှ အချက်အလက်ယူပါ။'}</p>
+                   <p className="text-gray-500 text-sm mt-1">{resumeData.language === 'en' ? 'Fill in your details or import from an existing resume.' : 'á€¡á€á€»á€€á€ºá€¡á€œá€€á€ºá€™á€»á€¬á€¸á€€á€­á€¯ á€–á€¼á€Šá€·á€ºá€…á€½á€€á€ºá€•á€« (á€žá€­á€¯á€·á€™á€Ÿá€¯á€á€º) á€›á€¾á€­á€•á€¼á€®á€¸á€žá€¬á€¸ CV á€™á€¾ á€¡á€á€»á€€á€ºá€¡á€œá€€á€ºá€šá€°á€•á€«á‹'}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button 
@@ -761,8 +782,8 @@ const App = () => {
                 value={resumeData.personalInfo.summary}
                 onChange={e => updatePersonalInfo('summary', e.target.value)}
                 placeholder={resumeData.personalInfo.summaryType === 'summary' 
-                  ? (resumeData.language === 'en' ? 'Briefly describe your professional background...' : 'သင်၏ ပရော်ဖက်ရှင်နယ် နောက်ခံကို အကျဉ်းချုံး ဖော်ပြပါ...')
-                  : (resumeData.language === 'en' ? 'State your career goals and what you aim to achieve...' : 'သင်၏ အသက်မွေးဝမ်းကျောင်း ရည်မှန်းချက်များကို ဖော်ပြပါ...')}
+                  ? (resumeData.language === 'en' ? 'Briefly describe your professional background...' : 'á€žá€„á€ºá á€•á€›á€±á€¬á€ºá€–á€€á€ºá€›á€¾á€„á€ºá€”á€šá€º á€”á€±á€¬á€€á€ºá€á€¶á€€á€­á€¯ á€¡á€€á€»á€‰á€ºá€¸á€á€»á€¯á€¶á€¸ á€–á€±á€¬á€ºá€•á€¼á€•á€«...')
+                  : (resumeData.language === 'en' ? 'State your career goals and what you aim to achieve...' : 'á€žá€„á€ºá á€¡á€žá€€á€ºá€™á€½á€±á€¸á€á€™á€ºá€¸á€€á€»á€±á€¬á€„á€ºá€¸ á€›á€Šá€ºá€™á€¾á€”á€ºá€¸á€á€»á€€á€ºá€™á€»á€¬á€¸á€€á€­á€¯ á€–á€±á€¬á€ºá€•á€¼á€•á€«...')}
               />
             </div>
           </div>
@@ -825,7 +846,7 @@ const App = () => {
                         className="flex items-center text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors"
                       >
                         <Sparkles size={14} className="mr-1" />
-                        {loadingAI === `grammar-${exp.id}` ? 'Checking...' : (resumeData.language === 'en' ? 'Check Grammar' : 'သဒ္ဒါစစ်ရန်')}
+                        {loadingAI === `grammar-${exp.id}` ? 'Checking...' : (resumeData.language === 'en' ? 'Check Grammar' : 'á€žá€’á€¹á€’á€«á€…á€…á€ºá€›á€”á€º')}
                       </button>
                       <button 
                         onClick={() => handleEnhanceExperience(exp.id)}
@@ -841,7 +862,7 @@ const App = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[120px]"
                     value={exp.description}
                     onChange={e => updateExperience(exp.id, 'description', e.target.value)}
-                    placeholder="• Developed new features..."
+                    placeholder="â€¢ Developed new features..."
                   />
                 </div>
               </div>
@@ -918,7 +939,7 @@ const App = () => {
             </div>
 
             <div className="flex flex-col gap-4 min-h-[100px] p-4 bg-gray-50 rounded-lg border border-gray-200">
-              {resumeData.skills.length === 0 && <span className="text-gray-400 italic">{resumeData.language === 'en' ? 'No skills added yet.' : 'ကျွမ်းကျင်မှုများ မထည့်ရသေးပါ။'}</span>}
+              {resumeData.skills.length === 0 && <span className="text-gray-400 italic">{resumeData.language === 'en' ? 'No skills added yet.' : 'á€€á€»á€½á€™á€ºá€¸á€€á€»á€„á€ºá€™á€¾á€¯á€™á€»á€¬á€¸ á€™á€‘á€Šá€·á€ºá€›á€žá€±á€¸á€•á€«á‹'}</span>}
               {resumeData.skills.map(skill => (
                 <div key={skill.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                   <span className="font-medium text-gray-800">{skill.name}</span>
@@ -1026,14 +1047,14 @@ const App = () => {
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">{t.ready}</h2>
               <p className="text-gray-600 max-w-md mx-auto">
-                {resumeData.language === 'en' ? 'Review your document in the preview panel. You can download it as a PDF or export as text for ATS checking.' : 'သင့်၏ CV ကို Preview မှာ စစ်ဆေးကြည့်နိုင်ပါသည်။ PDF အဖြစ် ဒေါင်းလုဒ်လုပ်နိုင်သလို စာသားသီးသန့်လည်း ထုတ်ယူနိုင်ပါသည်။'}
+                {resumeData.language === 'en' ? 'Review your document in the preview panel. You can download it as a PDF or export as text for ATS checking.' : 'á€žá€„á€·á€ºá CV á€€á€­á€¯ Preview á€™á€¾á€¬ á€…á€…á€ºá€†á€±á€¸á€€á€¼á€Šá€·á€ºá€”á€­á€¯á€„á€ºá€•á€«á€žá€Šá€ºá‹ PDF á€¡á€–á€¼á€…á€º á€’á€±á€«á€„á€ºá€¸á€œá€¯á€’á€ºá€œá€¯á€•á€ºá€”á€­á€¯á€„á€ºá€žá€œá€­á€¯ á€…á€¬á€žá€¬á€¸á€žá€®á€¸á€žá€”á€·á€ºá€œá€Šá€ºá€¸ á€‘á€¯á€á€ºá€šá€°á€”á€­á€¯á€„á€ºá€•á€«á€žá€Šá€ºá‹'}
               </p>
             </div>
             
             {/* Section Reordering */}
             <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 max-w-xl mx-auto shadow-sm">
                 <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest mb-4 flex items-center justify-center">
-                  <Layers size={16} className="mr-2 text-blue-600" /> {resumeData.language === 'en' ? 'Reorder Sections' : 'အပိုင်းများကို အစီအစဉ် ပြန်စီရန်'}
+                  <Layers size={16} className="mr-2 text-blue-600" /> {resumeData.language === 'en' ? 'Reorder Sections' : 'á€¡á€•á€­á€¯á€„á€ºá€¸á€™á€»á€¬á€¸á€€á€­á€¯ á€¡á€…á€®á€¡á€…á€‰á€º á€•á€¼á€”á€ºá€…á€®á€›á€”á€º'}
                 </h3>
                 <div className="space-y-2">
                   {resumeData.sectionOrder.map((sectionId, index) => (
@@ -1072,7 +1093,7 @@ const App = () => {
                 variant="primary" 
                 className="px-8 py-4 text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all flex items-center justify-center"
               >
-                {isExporting ? (resumeData.language === 'en' ? 'Downloading...' : 'ဒေါင်းလုဒ်လုပ်နေသည်...') : (
+                {isExporting ? (resumeData.language === 'en' ? 'Downloading...' : 'á€’á€±á€«á€„á€ºá€¸á€œá€¯á€’á€ºá€œá€¯á€•á€ºá€”á€±á€žá€Šá€º...') : (
                   <><Download className="mr-2" size={24} /> {t.downloadPDF}</>
                 )}
               </Button>
@@ -1092,10 +1113,10 @@ const App = () => {
                </button>
                
                <div className="border-t border-gray-200 pt-8 mt-8">
-                  <h3 className="text-xl font-bold mb-4">{resumeData.language === 'en' ? 'Bonus: AI Cover Letter' : 'အပိုဆောင်း- AI ဖြင့် Cover Letter ရေးရန်'}</h3>
+                  <h3 className="text-xl font-bold mb-4">{resumeData.language === 'en' ? 'Bonus: AI Cover Letter' : 'á€¡á€•á€­á€¯á€†á€±á€¬á€„á€ºá€¸- AI á€–á€¼á€„á€·á€º Cover Letter á€›á€±á€¸á€›á€”á€º'}</h3>
                   {!coverLetter ? (
                     <Button onClick={handleGenerateCoverLetter} variant="ai" isLoading={loadingAI === 'cover-letter'}>
-                      {resumeData.language === 'en' ? 'Generate Cover Letter' : 'Cover Letter ထုတ်ယူရန်'}
+                      {resumeData.language === 'en' ? 'Generate Cover Letter' : 'Cover Letter á€‘á€¯á€á€ºá€šá€°á€›á€”á€º'}
                     </Button>
                   ) : (
                     <div className="bg-white p-6 rounded-xl border border-gray-200 text-left relative group">
@@ -1161,7 +1182,7 @@ const App = () => {
                   </div>
                   <h1 className="mt-2 truncate text-2xl font-black tracking-tight text-slate-950">CVWizard</h1>
                   <p className="truncate text-sm text-slate-500">
-                    {activeDocumentName} · {savedStatusLabel}
+                    {activeDocumentName} Â· {savedStatusLabel}
                   </p>
                 </div>
               </div>
@@ -1240,168 +1261,382 @@ const App = () => {
           </div>
         </div>
       </nav>
-
-      <main className="mx-auto flex-1 max-w-7xl w-full p-4 sm:p-6 lg:p-8">
-        <section className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] no-print">
-          <div className="relative overflow-hidden rounded-[34px] bg-slate-950 p-6 text-white shadow-[0_35px_90px_rgba(15,23,42,0.24)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.38),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.96))]" />
-            <div className="relative">
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-100">
-                  Resume Operations
-                </span>
-                <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-200">
-                  {currentStepMeta.label}
-                </span>
-              </div>
-              <h2 className="max-w-2xl text-3xl font-black tracking-tight">
-                {resumeData.language === 'en'
-                  ? 'Build client-ready CVs and resumes with a stronger editorial system.'
-                  : 'Client-ready CV နှင့် Resume များကို ပိုမိုတိကျသော editorial system ဖြင့် တည်ဆောက်ပါ။'}
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                {resumeData.language === 'en'
-                  ? 'This workspace combines live preview, AI-assisted writing, document variants, and export tooling in one professional flow.'
-                  : 'Live preview, AI writing assistant, document variants နှင့် export tooling ကို professional flow တစ်ခုတည်းအောက်တွင် ပေါင်းစပ်ထားပါသည်။'}
-              </p>
-
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {editorStats.map((stat) => (
-                  <div key={stat.label} className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm">
-                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{stat.label}</div>
-                    <div className="mt-2 text-2xl font-black tracking-tight text-white">{stat.value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[34px] border border-slate-200 bg-white p-6 shadow-[0_25px_60px_rgba(15,23,42,0.08)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-blue-700">
-                  Live readiness
-                </span>
-                <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{completionPercent}% complete</h3>
-                <p className="mt-2 text-sm leading-7 text-slate-500">{currentStepMeta.caption}</p>
-              </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-950 text-lg font-black text-white">
-                {completionPercent}
-              </div>
-            </div>
-
-            <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full rounded-full bg-[linear-gradient(90deg,#2563eb_0%,#0f172a_100%)] transition-all" style={{ width: `${completionPercent}%` }} />
-            </div>
-
-            <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
-                {resumeData.language === 'en' ? 'Open checklist' : 'လိုအပ်နေသော အချက်များ'}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {missingSignals.length > 0 ? (
-                  missingSignals.map((item) => (
-                    <span key={item} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
-                      {item}
+      <main className="mx-auto flex-1 max-w-[1680px] w-full p-4 sm:p-6 lg:p-8">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)_460px]">
+          <aside className={`no-print ${isPreviewMode ? 'hidden xl:block' : 'block'}`}>
+            <div className="space-y-5 xl:sticky xl:top-28">
+              <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+                <div className="relative p-5">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.18),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.98))]" />
+                  <div className="relative">
+                    <span className="inline-flex rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.26em] text-white">
+                      Document Studio
                     </span>
-                  ))
-                ) : (
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {resumeData.language === 'en' ? 'Core sections are covered' : 'အဓိကအပိုင်းများ ပြည့်စုံပါသည်'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
+                    <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-950">{activeDocumentName}</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">
+                      {resumeData.language === 'en'
+                        ? 'A structured workspace for drafting, reviewing, styling, and exporting hiring-ready documents.'
+                        : 'Draft, review, design, and export from one structured workspace.'}
+                    </p>
 
-        <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className={`wizard-col lg:col-span-5 ${isPreviewMode ? 'hidden lg:block' : 'block'} no-print`}>
-            <div className="space-y-6">
-              <div className="rounded-[32px] border border-slate-200 bg-white/90 p-5 shadow-[0_25px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-                <Steps />
-              </div>
-
-              <div className="overflow-hidden rounded-[34px] border border-slate-200 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.08)]">
-                <div className="border-b border-slate-100 px-6 py-6">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
-                        {resumeData.language === 'en' ? 'Editor workspace' : 'Editor workspace'}
-                      </div>
-                      <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{currentStepMeta.label}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{currentStepMeta.caption}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {step === WizardStep.PERSONAL && (
-                        <Button onClick={() => setShowImportModal(true)} variant="ai" icon={<Import size={16} />}>
-                          {t.importResume}
-                        </Button>
-                      )}
-                      <Button onClick={handleManualSave} variant="outline" icon={<Save size={16} />}>
-                        {loadingAI === 'save' ? 'Saving...' : 'Save Draft'}
-                      </Button>
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      {editorStats.map((stat) => (
+                        <div key={stat.label} className="rounded-[22px] border border-slate-200 bg-white/90 px-3 py-3 shadow-sm">
+                          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</div>
+                          <div className="mt-1 text-lg font-black tracking-tight text-slate-950">{stat.value}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="p-6 md:p-8">
-                  {renderStepContent()}
+              <div className="rounded-[32px] border border-slate-200 bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Documents</div>
+                    <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950">Library rail</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowResumesModal(true)}
+                    className="rounded-full border border-slate-200 p-2 text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-800"
+                    title="Open full library"
+                  >
+                    <Folder size={16} />
+                  </button>
+                </div>
 
-                  <div className="mt-8 flex justify-between border-t border-slate-100 pt-6">
-                    <Button
-                      variant="ghost"
-                      onClick={() => setStep(prev => Math.max(0, prev - 1))}
-                      disabled={step === 0}
-                      icon={<ChevronLeft size={16} />}
-                    >
-                      {t.back}
-                    </Button>
+                <div className="mt-4 grid gap-2">
+                  <button
+                    onClick={createNewResume}
+                    className="flex items-center justify-between rounded-[22px] border border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-left transition-all hover:border-blue-400 hover:bg-blue-100/70"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">
+                        {resumeData.language === 'en' ? 'New document' : 'New document'}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {resumeData.language === 'en' ? 'Start a clean CV or resume' : 'Start a clean CV or resume'}
+                      </div>
+                    </div>
+                    <PlusCircle size={18} className="text-blue-600" />
+                  </button>
 
-                    {step < WizardStep.FINALIZE && (
-                      <Button onClick={() => setStep(prev => Math.min(WizardStep.FINALIZE, prev + 1))}>
-                        {t.next} <ChevronRight size={16} className="ml-2" />
+                  <button
+                    onClick={() => setShowImportModal(true)}
+                    className="flex items-center justify-between rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-3 text-left transition-all hover:border-slate-300 hover:bg-white"
+                  >
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{t.importResume}</div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {resumeData.language === 'en' ? 'Bring in an existing draft' : 'Bring in an existing draft'}
+                      </div>
+                    </div>
+                    <Import size={18} className="text-slate-500" />
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Recent cloud drafts</div>
+                  {studioDocuments.length > 0 ? (
+                    studioDocuments.map((resume) => (
+                      <div
+                        key={resume.id}
+                        onClick={() => handleSelectResume(resume.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectResume(resume.id);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className={`group w-full cursor-pointer rounded-[22px] border px-4 py-3 text-left transition-all ${
+                          activeResumeId === resume.id
+                            ? 'border-blue-500 bg-blue-50 shadow-[0_14px_30px_rgba(37,99,235,0.12)]'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-slate-900">{resume.name}</div>
+                            <div className="mt-1 text-xs text-slate-500">{resume.updatedAt?.toDate().toLocaleDateString()}</div>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeleteResume(resume.id, e)}
+                            className="rounded-lg p-1 text-slate-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[22px] border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                      {resumeData.language === 'en'
+                        ? 'No cloud drafts yet. Save or sign in to start versioning documents.'
+                        : 'No cloud drafts yet. Save or sign in to start versioning documents.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[32px] border border-slate-200 bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Workflow</div>
+                <h3 className="mt-2 text-lg font-black tracking-tight text-slate-950">Document steps</h3>
+                <div className="mt-4">
+                  <Steps />
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section className={`no-print ${isPreviewMode ? 'hidden xl:block' : 'block'}`}>
+            <div className="overflow-hidden rounded-[34px] border border-slate-200 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.08)]">
+              <div className="relative border-b border-slate-100 px-6 py-6">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.16),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))]" />
+                <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-blue-700">
+                        Editor canvas
+                      </span>
+                      <span className="rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white">
+                        {currentStepMeta.label}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 text-3xl font-black tracking-tight text-slate-950">{currentStepMeta.label}</h3>
+                    <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">{currentStepMeta.caption}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {step === WizardStep.PERSONAL && (
+                      <Button onClick={() => setShowImportModal(true)} variant="ai" icon={<Import size={16} />}>
+                        {t.importResume}
                       </Button>
+                    )}
+                    <Button onClick={handleManualSave} variant="outline" icon={<Save size={16} />}>
+                      {loadingAI === 'save' ? 'Saving...' : 'Save Draft'}
+                    </Button>
+                    <Button onClick={() => setIsPreviewMode(true)} variant="ghost" icon={<Eye size={16} />} className="xl:hidden">
+                      Preview
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="relative mt-6 rounded-[24px] border border-slate-200 bg-slate-50/90 px-4 py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Readiness</div>
+                      <div className="mt-2 text-lg font-black tracking-tight text-slate-950">{completionPercent}% complete</div>
+                      <div className="mt-1 text-sm text-slate-500">{savedStatusLabel}</div>
+                    </div>
+                    <div className="rounded-full bg-white px-3 py-2 text-xs font-bold text-slate-500 shadow-sm">
+                      {resumeData.docType === 'cv' ? t.cv : t.resume}
+                    </div>
+                  </div>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                    <div className="h-full rounded-full bg-[linear-gradient(90deg,#2563eb_0%,#0f172a_100%)]" style={{ width: `${completionPercent}%` }} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {missingSignals.length > 0 ? (
+                      missingSignals.map((item) => (
+                        <span key={item} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                          {item}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                        {resumeData.language === 'en' ? 'Core content is covered' : 'Core content is covered'}
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className={`lg:col-span-7 relative overflow-hidden rounded-[34px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.18),transparent_32%),linear-gradient(180deg,#eff6ff_0%,#e2e8f0_100%)] shadow-[0_32px_80px_rgba(15,23,42,0.12)] ${isPreviewMode ? 'fixed inset-0 z-50 m-4 flex bg-slate-950' : 'hidden lg:flex'}`}>
-            <div className="absolute right-4 top-4 z-40 flex items-center gap-2 rounded-full border border-white/70 bg-white/90 p-2 shadow-xl backdrop-blur-md no-print">
-              <span className="px-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Zoom</span>
-              <input
-                type="range"
-                min="0.3"
-                max="1.5"
-                step="0.05"
-                value={zoom}
-                onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="h-1.5 w-24 cursor-pointer appearance-none rounded-lg bg-slate-300 accent-blue-600 outline-none"
-              />
-              <span className="w-10 text-center text-xs font-black text-blue-600">{Math.round(zoom * 100)}%</span>
+              <div className="p-6 md:p-8">
+                {renderStepContent()}
 
-              {isPreviewMode && (
-                <button
-                  onClick={() => setIsPreviewMode(false)}
-                  className="ml-1 rounded-full bg-slate-100 p-1.5 text-slate-600 transition-colors hover:bg-slate-200"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+                <div className="mt-8 flex justify-between border-t border-slate-100 pt-6">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setStep(prev => Math.max(0, prev - 1))}
+                    disabled={step === 0}
+                    icon={<ChevronLeft size={16} />}
+                  >
+                    {t.back}
+                  </Button>
 
-            <div className="flex h-full w-full flex-col items-center justify-start overflow-auto p-4 sm:p-8 print:overflow-visible print:p-0">
-              <div className="mb-6 w-full max-w-[210mm] no-print">
-                <ThemeEditor theme={resumeData.theme} onChange={updateTheme} language={resumeData.language} />
-              </div>
-              <div className="origin-top transform-gpu transition-all duration-300 print:shadow-none">
-                <Preview data={debouncedResumeData} scale={zoom} />
+                  {step < WizardStep.FINALIZE && (
+                    <Button onClick={() => setStep(prev => Math.min(WizardStep.FINALIZE, prev + 1))}>
+                      {t.next} <ChevronRight size={16} className="ml-2" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </section>
+
+          <section className={`relative overflow-hidden rounded-[34px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.18),transparent_32%),linear-gradient(180deg,#eff6ff_0%,#e2e8f0_100%)] shadow-[0_32px_80px_rgba(15,23,42,0.12)] ${isPreviewMode ? 'fixed inset-0 z-50 m-4 flex bg-slate-950' : 'hidden xl:flex'}`}>
+            <div className="flex h-full w-full flex-col">
+              <div className="border-b border-white/70 bg-white/80 px-4 py-4 backdrop-blur-md no-print">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex gap-2">
+                    {inspectorTabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setInspectorTab(tab.id)}
+                        className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-black uppercase tracking-[0.18em] transition-all ${
+                          inspectorTab === tab.id
+                            ? 'bg-slate-950 text-white shadow-lg'
+                            : 'bg-white text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        <tab.icon size={14} />
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/90 p-2 shadow-xl">
+                    <span className="px-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Zoom</span>
+                    <input
+                      type="range"
+                      min="0.3"
+                      max="1.5"
+                      step="0.05"
+                      value={zoom}
+                      onChange={(e) => setZoom(parseFloat(e.target.value))}
+                      className="h-1.5 w-20 cursor-pointer appearance-none rounded-lg bg-slate-300 accent-blue-600 outline-none"
+                    />
+                    <span className="w-10 text-center text-xs font-black text-blue-600">{Math.round(zoom * 100)}%</span>
+                    {isPreviewMode && (
+                      <button
+                        onClick={() => setIsPreviewMode(false)}
+                        className="ml-1 rounded-full bg-slate-100 p-1.5 text-slate-600 transition-colors hover:bg-slate-200"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto p-4 sm:p-6 print:overflow-visible print:p-0">
+                {inspectorTab === 'preview' && (
+                  <div className="flex min-h-full flex-col items-center">
+                    <div className="mb-4 w-full rounded-[26px] border border-white/70 bg-white/80 p-4 shadow-sm backdrop-blur-sm no-print">
+                      <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Live document</div>
+                      <div className="mt-2 text-sm font-semibold text-slate-900">{activeDocumentName}</div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {resumeData.language === 'en'
+                          ? 'Preview updates with your current draft and section ordering.'
+                          : 'Preview updates with your current draft and section ordering.'}
+                      </div>
+                    </div>
+                    <div className="origin-top transform-gpu transition-all duration-300 print:shadow-none">
+                      <Preview data={debouncedResumeData} scale={zoom} />
+                    </div>
+                  </div>
+                )}
+
+                {inspectorTab === 'design' && (
+                  <div className="space-y-4">
+                    <div className="rounded-[26px] border border-white/70 bg-white/80 p-4 shadow-sm backdrop-blur-sm no-print">
+                      <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Inspector</div>
+                      <div className="mt-2 text-sm font-semibold text-slate-900">
+                        {resumeData.language === 'en' ? 'Design system controls' : 'Design system controls'}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {resumeData.language === 'en'
+                          ? 'Adjust template, typography, density, color, and profile treatment.'
+                          : 'Adjust template, typography, density, color, and profile treatment.'}
+                      </div>
+                    </div>
+                    <ThemeEditor theme={resumeData.theme} onChange={updateTheme} language={resumeData.language} />
+                  </div>
+                )}
+
+                {inspectorTab === 'export' && (
+                  <div className="space-y-4 no-print">
+                    <div className="rounded-[30px] border border-white/70 bg-white/85 p-5 shadow-sm backdrop-blur-sm">
+                      <span className="inline-flex rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white">
+                        Delivery Center
+                      </span>
+                      <h3 className="mt-4 text-2xl font-black tracking-tight text-slate-950">
+                        {resumeData.language === 'en' ? 'Export and submit faster' : 'Export and submit faster'}
+                      </h3>
+                      <p className="mt-2 text-sm leading-7 text-slate-500">
+                        {resumeData.language === 'en'
+                          ? 'Choose the final delivery format, keep a text version for ATS review, and draft a cover letter from the current profile.'
+                          : 'Choose the final delivery format, keep a text version for ATS review, and draft a cover letter from the current profile.'}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-3">
+                      <Button onClick={handleDownloadPDF} variant="ai" size="lg" icon={<Download size={18} />} disabled={isExporting}>
+                        {isExporting ? 'Preparing PDF...' : t.downloadPDF}
+                      </Button>
+                      <Button onClick={handlePrint} variant="outline" size="lg" icon={<Printer size={18} />}>
+                        {t.printSave}
+                      </Button>
+                      <Button onClick={handleExportTXT} variant="ghost" size="lg" icon={<FileText size={18} />}>
+                        {t.exportATS}
+                      </Button>
+                    </div>
+
+                    <div className="rounded-[30px] border border-white/70 bg-white/85 p-5 shadow-sm backdrop-blur-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Cover Letter</div>
+                          <div className="mt-2 text-lg font-black tracking-tight text-slate-950">
+                            {resumeData.language === 'en' ? 'Generate a matching letter' : 'Generate a matching letter'}
+                          </div>
+                        </div>
+                        {!coverLetter && (
+                          <Button onClick={handleGenerateCoverLetter} variant="ai" isLoading={loadingAI === 'cover-letter'}>
+                            {resumeData.language === 'en' ? 'Generate' : 'Generate'}
+                          </Button>
+                        )}
+                      </div>
+
+                      {coverLetter ? (
+                        <div className="mt-4 space-y-3">
+                          <pre className="max-h-[320px] overflow-auto whitespace-pre-wrap rounded-[22px] border border-slate-200 bg-slate-50 p-4 font-sans text-sm leading-7 text-slate-700">
+                            {coverLetter}
+                          </pre>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const blob = new Blob([coverLetter], { type: 'text/plain' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'CoverLetter.txt';
+                                a.click();
+                              }}
+                            >
+                              Download TXT
+                            </Button>
+                            <Button variant="ghost" onClick={() => setCoverLetter(null)}>
+                              Clear
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-4 rounded-[22px] border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                          {resumeData.language === 'en'
+                            ? 'No cover letter generated yet. Use the current resume data to draft one from here.'
+                            : 'No cover letter generated yet. Use the current resume data to draft one from here.'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
         </div>
       </main>
       {/* Saved Resumes Modal */}
