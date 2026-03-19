@@ -14,6 +14,7 @@ CVWizard is a production-minded resume and CV studio built with React, TypeScrip
 
 This version is tuned to feel closer to an internal document studio than a simple form app:
 
+- Three-panel product layout with a library rail, editor canvas, and inspector panel.
 - Workspace-style shell with readiness tracking and document metrics.
 - Stronger visual hierarchy for editor, preview, and theme controls.
 - Better section-order fidelity across templates.
@@ -92,14 +93,14 @@ npm run build
 
 ```text
 .
-├── components/         # UI building blocks, theme controls, preview, import flow
-├── hooks/              # Shared hooks such as debounce
-├── services/           # Firebase, auth, AI, and storage logic
-├── .github/workflows/  # Deployment automation
-├── App.tsx             # Product shell and editor orchestration
-├── translations.ts     # English and Burmese UI copy
-├── types.ts            # Shared data contracts
-└── vite.config.ts      # Build, aliasing, and chunk strategy
+|-- components/         # UI building blocks, theme controls, preview, import flow
+|-- hooks/              # Shared hooks such as debounce
+|-- services/           # Firebase, auth, AI, and storage logic
+|-- .github/workflows/  # Deployment automation
+|-- App.tsx             # Product shell and editor orchestration
+|-- translations.ts     # English and Burmese UI copy
+|-- types.ts            # Shared data contracts
+`-- vite.config.ts      # Build, aliasing, and chunk strategy
 ```
 
 ## Deployment
