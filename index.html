@@ -14,58 +14,55 @@
         font-family: 'Inter', sans-serif;
       }
       
-      /* Robust Print Styling */
+      /* New & Robust Print Styling */
       @media print {
-        @page {
-          margin: 0;
-          size: auto;
+        /* Hide UI elements during print */
+        nav, .no-print, button, .wizard-col, .theme-editor-card {
+          display: none !important;
         }
         
-        /* Reset document structure for printing */
-        html, body, #root, main {
+        /* Reset containers for clean print */
+        html, body, #root {
           height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
           overflow: visible !important;
           background: white !important;
         }
 
-        /* Hide everything by default */
-        body * {
-          visibility: hidden;
-        }
-
-        /* Only show the resume preview and its children */
-        #resume-preview, #resume-preview * {
-          visibility: visible;
-        }
-
-        /* Position the resume at top-left of the page */
-        #resume-preview {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100% !important;
-          margin: 0 !important;
+        /* Target the main preview column and its parents */
+        main {
+          display: block !important;
           padding: 0 !important;
-          transform: none !important;
+          margin: 0 !important;
+        }
+
+        .lg\:col-span-7 {
+          width: 100% !important;
+          position: static !important;
+          display: block !important;
+        }
+
+        /* The actual CV paper */
+        #resume-preview {
+          position: relative !important;
+          margin: 0 auto !important;
           box-shadow: none !important;
+          transform: none !important;
+          width: 210mm !important; /* A4 Width */
+          min-height: 297mm !important;
+          left: 0 !important;
+          top: 0 !important;
+          page-break-after: always;
           
-          /* Ensure background colors print */
+          /* Ensure colors print */
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
 
-        /* Ensure no other elements interfere */
-        nav, .no-print, button, .wizard-col {
-          display: none !important;
-        }
-
-        /* Ensure the preview column is visible in print even when hidden on mobile layout */
-        .print-layout {
-          display: flex !important;
-          position: static !important;
+        /* Ensure scrollable containers don't clip */
+        .overflow-auto, .overflow-y-auto {
           overflow: visible !important;
-          background: transparent !important;
-          padding: 0 !important;
         }
       }
     </style>
