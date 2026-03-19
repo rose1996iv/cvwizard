@@ -353,38 +353,50 @@ const App = () => {
   const handleDownloadPDF = async () => {
     setIsExporting(true);
     const element = document.getElementById('resume-preview');
-    if (!element) return;
+    if (!element) {
+        setIsExporting(false);
+        return;
+    }
 
-    // Use html2pdf.js for client-side generation
+    // Temporarily reset transform and transitions for clean capture
+    const originalTransform = element.style.transform;
+    const originalTransition = element.style.transition;
+    
+    element.style.transform = 'none';
+    element.style.transition = 'none';
+
     if (typeof html2pdf !== 'undefined') {
         const opt = {
             margin: 0,
             filename: `${resumeData.personalInfo.fullName || 'Resume'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            image: { type: 'jpeg', quality: 1.0 },
+            html2canvas: { 
+                scale: 3, 
+                useCORS: true, 
+                letterRendering: true,
+                scrollY: 0,
+                scrollX: 0,
+                windowWidth: 1200 // Consistent width for capturing
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
         };
+        
         try {
-            await html2pdf().set(opt).from(element).toPdf().get('pdf').then((pdf: any) => {
-                const totalPages = pdf.internal.getNumberOfPages();
-                for (let i = 1; i <= totalPages; i++) {
-                    pdf.setPage(i);
-                    pdf.setFontSize(9);
-                    pdf.setTextColor(150);
-                    // Add page number at bottom right: Page X of Y
-                    pdf.text(`Page ${i} of ${totalPages}`, pdf.internal.pageSize.getWidth() - 25, pdf.internal.pageSize.getHeight() - 10);
-                }
-            }).save();
+            await html2pdf().set(opt).from(element).save();
         } catch (e) {
             console.error("PDF Export failed", e);
             alert("Download failed. Falling back to print mode.");
             handlePrint();
+        } finally {
+            // Restore styles
+            element.style.transform = originalTransform;
+            element.style.transition = originalTransition;
+            setIsExporting(false);
         }
     } else {
-        // Fallback if library missing
         handlePrint();
+        setIsExporting(false);
     }
-    setIsExporting(false);
   };
 
   const handleExportTXT = () => {
