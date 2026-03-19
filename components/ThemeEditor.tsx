@@ -189,16 +189,52 @@ export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange, langu
         </label>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-           {/* Show Profile Image */}
-           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-              <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Profile Picture' : 'ဓါတ်ပုံပြရန်'}</span>
-              <button 
-                onClick={() => onChange('showProfile', !theme.showProfile)}
-                className={`w-10 h-5 rounded-full relative transition-colors ${theme.showProfile ? 'bg-blue-600' : 'bg-gray-300'}`}
-              >
-                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.showProfile ? 'left-6' : 'left-1'}`} />
-              </button>
-           </div>
+            {/* Show Profile Image */}
+            <div className="flex flex-col gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+               <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Profile Picture' : 'ဓါတ်ပုံပြရန်'}</span>
+                  <button 
+                    onClick={() => onChange('showProfile', !theme.showProfile)}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${theme.showProfile ? 'bg-blue-600' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.showProfile ? 'left-6' : 'left-1'}`} />
+                  </button>
+               </div>
+
+               {theme.showProfile && (
+                 <>
+                   <div className="pt-2 border-t border-gray-200">
+                     <span className="text-[10px] font-bold text-gray-400 uppercase mb-2 block">{language === 'en' ? 'Shape' : 'ပုံသဏ္ဍာန်'}</span>
+                     <div className="flex gap-2">
+                        {(['circle', 'rounded', 'square'] as const).map(shape => (
+                          <button 
+                            key={shape}
+                            onClick={() => onChange('profileShape', shape)}
+                            className={`flex-1 py-1 text-[10px] font-bold rounded border capitalize ${theme.profileShape === shape ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-600'}`}
+                          >
+                            {shape}
+                          </button>
+                        ))}
+                     </div>
+                   </div>
+
+                   <div className="pt-2">
+                     <span className="text-[10px] font-bold text-gray-400 uppercase mb-2 block">{language === 'en' ? 'Size' : 'အရွယ်အစား'}</span>
+                     <div className="flex gap-2">
+                        {(['sm', 'md', 'lg'] as const).map(size => (
+                          <button 
+                            key={size}
+                            onClick={() => onChange('profileSize', size)}
+                            className={`flex-1 py-1 text-[10px] font-bold rounded border uppercase ${theme.profileSize === size ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-600'}`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                     </div>
+                   </div>
+                 </>
+               )}
+            </div>
            
            {/* Compact Mode */}
            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">

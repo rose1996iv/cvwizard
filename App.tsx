@@ -46,6 +46,10 @@ const App = () => {
         // Ensure new fields exist for existing users
         if (!parsed.docType) parsed.docType = 'cv';
         if (parsed.personalInfo && !parsed.personalInfo.summaryType) parsed.personalInfo.summaryType = 'summary';
+        if (parsed.theme && !parsed.theme.profileShape) {
+          parsed.theme.profileShape = 'circle';
+          parsed.theme.profileSize = 'md';
+        }
         return parsed;
       } catch (e) {
         console.error('Failed to parse saved data', e);
@@ -75,6 +79,8 @@ const App = () => {
         font: 'Inter',
         templateId: 'modern',
         showProfile: true,
+        profileShape: 'circle',
+        profileSize: 'md',
         showIcons: true,
         compactMode: false,
       },

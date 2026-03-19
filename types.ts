@@ -59,6 +59,8 @@ export interface Theme {
   font: 'Inter' | 'Merriweather' | 'Roboto' | 'Lato' | 'Open Sans';
   templateId: TemplateId;
   showProfile: boolean;
+  profileShape: 'circle' | 'square' | 'rounded';
+  profileSize: 'sm' | 'md' | 'lg';
   showIcons: boolean;
   compactMode: boolean;
 }

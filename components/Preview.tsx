@@ -39,6 +39,25 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
     </div>
   );
 
+
+  const getProfileShapeClass = () => {
+    switch(theme.profileShape) {
+      case 'square': return 'rounded-none';
+      case 'rounded': return 'rounded-2xl';
+      case 'circle': 
+      default: return 'rounded-full';
+    }
+  };
+
+  const getProfileSizeClass = () => {
+    switch(theme.profileSize) {
+      case 'sm': return 'w-20 h-20';
+      case 'lg': return 'w-36 h-36';
+      case 'md': 
+      default: return 'w-28 h-28';
+    }
+  };
+
   const SectionHeading = ({ children, icon: Icon }: { children: React.ReactNode, icon?: any }) => (
     <h2 className={`text-xs font-bold uppercase tracking-widest mb-3 border-b-2 theme-border pb-1 ${templateId === 'creative' ? 'theme-text border-l-4 pl-2' : 'text-gray-900'} flex items-center gap-2`}>
       {theme.showIcons && Icon && <Icon size={14} className={templateId === 'creative' ? 'theme-text' : 'text-gray-400'} />}
@@ -183,7 +202,7 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
            <img 
              src={personalInfo.profileImage} 
              alt="Profile" 
-             className={`w-28 h-28 object-cover shadow-lg ${templateId === 'creative' ? 'rounded-2xl border-4 border-white/20' : 'rounded-full border-4 border-white'}`}
+             className={`${getProfileSizeClass()} object-cover shadow-lg ${getProfileShapeClass()} border-4 border-white`}
              style={templateId !== 'creative' ? { borderColor: primaryColor } : {}}
            />
         </div>
