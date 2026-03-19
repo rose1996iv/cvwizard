@@ -1,114 +1,129 @@
-# 🚀 CVWizard: AI-Powered Intelligent Resume Builder
+# CVWizard
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-6-purple.svg)](https://vitejs.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org/)
-[![Gemini AI](https://img.shields.io/badge/AI-Gemini-orange.svg)](https://ai.google.dev/)
+CVWizard is a production-minded resume and CV studio built with React, TypeScript, Vite, Firebase, and Gemini. It combines guided document authoring, AI-assisted content generation, cloud draft management, live preview, and export tooling in a single workflow.
 
-CVWizard is a state-of-the-art, AI-driven resume building platform designed to help professionals create high-impact, ATS-friendly CVs in minutes. Leveraging Google's Gemini AI, it streamlines the writing process and provides intelligent content suggestions.
+## Highlights
 
-[**✨ Explore the Live Demo**](https://rose1996iv.github.io/cvwizard/)
+- Professional multi-step editor for personal profile, experience, education, skills, custom sections, theming, and export.
+- Live document preview with multiple templates, configurable typography, profile image controls, section ordering, and print-safe rendering.
+- AI tools for summary generation, experience enhancement, grammar cleanup, skill suggestions, cover letter drafting, and resume parsing.
+- Firebase authentication and Firestore-backed resume storage for multi-document cloud drafts.
+- GitHub Pages deployment workflow included in `.github/workflows/deploy.yml`.
 
----
+## Product Direction
 
-## 📸 Preview
+This version is tuned to feel closer to an internal document studio than a simple form app:
 
-[![Watch CVWizard Preview](./preview-cover.svg)](./preview.mp4)
+- Workspace-style shell with readiness tracking and document metrics.
+- Stronger visual hierarchy for editor, preview, and theme controls.
+- Better section-order fidelity across templates.
+- Safer cloud draft lifecycle when deleting the active resume.
+- Cleaner theme system with premium typography options.
 
-*Click the image above to view the platform in action.*
+## Tech Stack
 
----
+- Frontend: React 19, TypeScript, Vite 6
+- AI: Google Gemini via `@google/genai`
+- Auth and data: Firebase Auth, Firestore
+- UI: Tailwind utility classes, Lucide icons
+- Deployment: GitHub Pages via GitHub Actions
 
-## 🌟 Key Features
+## Getting Started
 
-### 🤖 Intelligent AI Assistance (via Google Gemini)
-- **Automatic Resume Parsing:** Import your raw content and let AI structure it perfectly.
-- **Smart Summaries:** Generate compelling professional summaries tailored to your role.
-- **Experience Enhancement:** Transform basic bullet points into achievement-oriented descriptions.
-- **Skill Suggestions:** Get personalized skill recommendations based on your experience.
+### 1. Install dependencies
 
-### 🛠️ Powerful Builder Infrastructure
-- **Guided multi-step workflow** that covers Personal Info, Experience, Education, and Skills.
-- **Real-time Live Preview:** Watch your resume take shape instantly as you type.
-- **Dynamic Custom Sections:** Add unique sections to showcase your specific achievements.
-
-### 🎨 Design & Export
-- **Aesthetic Customization:** Fine-tune colors, backgrounds, and typography.
-- **ATS-Optimized Templates:** Ensuring your resume passes through screening filters.
-- **One-Click PDF Export:** Download high-quality, print-ready documents instantly.
-
----
-
-## 💻 Tech Stack
-
-- **Core:** [React 19](https://react.dev/) & [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool:** [Vite 6](https://vitejs.dev/)
-- **AI Engine:** [Google Gemini API](https://ai.google.dev/)
-- **Icons:** [Lucide React](https://lucide.dev/)
-- **Styling:** Modern Vanilla CSS with CSS Modules/Variables
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- **Node.js** (v20 or higher)
-- **npm** or **yarn**
-- A **Gemini API Key** (Get one at [Google AI Studio](https://aistudio.google.com/))
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/rose1996iv/cvwizard.git
-   cd cvwizard
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Environment Configuration:**
-   Create a `.env.local` file in the root directory:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-
-4. **Launch Development Server:**
-   ```bash
-   npm run dev
-   ```
-   Access the app at `http://localhost:3000`
-
----
-
-## 📁 Project Architecture
-
-```text
-├── components/       # Reusable UI components & Resume templates
-├── services/         # Gemini AI integration logic
-├── hooks/            # Custom React hooks (Debouncing, State Management)
-├── types.ts          # Centralized TypeScript definitions
-├── App.tsx           # Main application shell and wizard flow
-└── vite.config.ts    # Build and environment configuration
+```bash
+npm install
 ```
 
----
+### 2. Configure environment variables
 
-## 🛡️ Security & Best Practices
+Copy `.env.example` into a local `.env` or `.env.local` file and provide your own keys:
 
-- **API Security:** Currently, the Gemini API is called directly from the client. For enterprise production, it is recommended to route these requests through a secure backend proxy to protect your API keys.
-- **Privacy:** Data is processed in real-time and remains in the client-side state during the session.
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
 
----
+### 3. Run locally
 
-## 📄 License
+```bash
+npm run dev
+```
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The app starts on `http://localhost:3000`.
 
----
+### 4. Build for production
 
-<p align="center">Made with ❤️ for professionals worldwide.</p>
+```bash
+npm run build
+```
 
+## Core Features
+
+### Authoring
+
+- Guided document builder with autosave behavior.
+- Cloud draft switching for authenticated users.
+- Custom sections for awards, volunteering, certifications, publications, or project work.
+
+### AI Assistance
+
+- Generate a role-specific summary.
+- Improve experience bullets.
+- Suggest missing skills.
+- Check grammar and professional tone.
+- Parse existing resume text, images, or PDF documents.
+- Draft a cover letter from the current resume state.
+
+### Output
+
+- Print-safe preview.
+- PDF export via `html2pdf`.
+- Plain text export for ATS review.
+- Section ordering across templates.
+
+## Project Structure
+
+```text
+.
+├── components/         # UI building blocks, theme controls, preview, import flow
+├── hooks/              # Shared hooks such as debounce
+├── services/           # Firebase, auth, AI, and storage logic
+├── .github/workflows/  # Deployment automation
+├── App.tsx             # Product shell and editor orchestration
+├── translations.ts     # English and Burmese UI copy
+├── types.ts            # Shared data contracts
+└── vite.config.ts      # Build, aliasing, and chunk strategy
+```
+
+## Deployment
+
+Pushes to `main` trigger the GitHub Pages pipeline defined in `.github/workflows/deploy.yml`. Before deploying, configure these repository secrets:
+
+- `GEMINI_API_KEY`
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+
+## Notes
+
+- Gemini requests are currently made client-side. For stricter production security, move AI calls behind a server-side proxy.
+- `.env` is gitignored. Do not commit live secrets.
+- Firebase rules should be locked down per-user before broad public rollout.
+
+## Scripts
+
+```bash
+npm run dev
+npm run build
+npm run preview
+```
