@@ -58,6 +58,9 @@ export interface Theme {
   backgroundColor: string;
   font: 'Inter' | 'Merriweather' | 'Roboto' | 'Lato' | 'Open Sans';
   templateId: TemplateId;
+  showProfile: boolean;
+  showIcons: boolean;
+  compactMode: boolean;
 }
 
 export type SectionId = 'summary' | 'experience' | 'education' | 'skills' | 'custom';

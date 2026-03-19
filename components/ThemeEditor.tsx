@@ -5,7 +5,7 @@ import { translations } from '../translations';
 
 interface ThemeEditorProps {
   theme: Theme;
-  onChange: (field: keyof Theme, value: string) => void;
+  onChange: (field: keyof Theme, value: any) => void;
   language?: 'en' | 'mm';
 }
 
@@ -52,6 +52,9 @@ export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange, langu
     onChange('backgroundColor', '#ffffff');
     onChange('font', 'Inter');
     onChange('templateId', 'modern');
+    onChange('showProfile', true);
+    onChange('showIcons', true);
+    onChange('compactMode', false);
   };
 
   return (
@@ -176,6 +179,48 @@ export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange, langu
               {font}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Layout Options */}
+      <div className="mt-8 border-t border-gray-100 pt-6">
+        <label className="text-xs font-bold text-gray-500 mb-4 block uppercase flex items-center">
+          <LayoutTemplate size={12} className="mr-1" /> {language === 'en' ? 'Layout Fine-tuning' : 'ကိုယ်ပိုင် စိတ်ကြိုက်ပြင်ဆင်မှု'}
+        </label>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+           {/* Show Profile Image */}
+           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+              <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Profile Picture' : 'ဓါတ်ပုံပြရန်'}</span>
+              <button 
+                onClick={() => onChange('showProfile', !theme.showProfile)}
+                className={`w-10 h-5 rounded-full relative transition-colors ${theme.showProfile ? 'bg-blue-600' : 'bg-gray-300'}`}
+              >
+                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.showProfile ? 'left-6' : 'left-1'}`} />
+              </button>
+           </div>
+           
+           {/* Compact Mode */}
+           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+              <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Compact Mode' : 'ကျစ်ကျစ်လစ်လစ်'}</span>
+              <button 
+                onClick={() => onChange('compactMode', !theme.compactMode)}
+                className={`w-10 h-5 rounded-full relative transition-colors ${theme.compactMode ? 'bg-blue-600' : 'bg-gray-300'}`}
+              >
+                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.compactMode ? 'left-6' : 'left-1'}`} />
+              </button>
+           </div>
+
+           {/* Show Section Icons */}
+           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+              <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Section Icons' : 'သင်္ကေတများ'}</span>
+              <button 
+                onClick={() => onChange('showIcons', !theme.showIcons)}
+                className={`w-10 h-5 rounded-full relative transition-colors ${theme.showIcons ? 'bg-blue-600' : 'bg-gray-300'}`}
+              >
+                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.showIcons ? 'left-6' : 'left-1'}`} />
+              </button>
+           </div>
         </div>
       </div>
     </div>

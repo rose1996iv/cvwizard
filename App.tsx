@@ -63,7 +63,10 @@ const App = () => {
         color: '#2563eb',
         backgroundColor: '#ffffff',
         font: 'Inter',
-        templateId: 'modern'
+        templateId: 'modern',
+        showProfile: true,
+        showIcons: true,
+        compactMode: false,
       },
       sectionOrder: ['summary', 'experience', 'education', 'skills', 'custom'],
       language: 'en'
@@ -112,7 +115,7 @@ const App = () => {
     updatePersonalInfo('profileImage', null);
   };
 
-  const updateTheme = (field: keyof Theme, value: string) => {
+  const updateTheme = (field: keyof Theme, value: any) => {
     setResumeData(prev => ({
       ...prev,
       theme: { ...prev.theme, [field]: value }

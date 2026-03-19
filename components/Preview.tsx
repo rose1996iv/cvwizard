@@ -1,6 +1,6 @@
 import React from 'react';
 import { ResumeData, SectionId } from '../types';
-import { Mail, Phone, MapPin, Linkedin, Globe, Star } from 'lucide-react';
+import { Mail, Phone, MapPin, Linkedin, Globe, Star, User, Briefcase, GraduationCap, Wrench, Layers } from 'lucide-react';
 import { translations } from '../translations';
 
 interface PreviewProps {
@@ -39,15 +39,16 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
     </div>
   );
 
-  const SectionHeading = ({ children }: { children: React.ReactNode }) => (
-    <h2 className={`text-xs font-bold uppercase tracking-widest mb-3 border-b-2 theme-border pb-1 ${templateId === 'creative' ? 'theme-text border-l-4 pl-2' : 'text-gray-900'}`}>
+  const SectionHeading = ({ children, icon: Icon }: { children: React.ReactNode, icon?: any }) => (
+    <h2 className={`text-xs font-bold uppercase tracking-widest mb-3 border-b-2 theme-border pb-1 ${templateId === 'creative' ? 'theme-text border-l-4 pl-2' : 'text-gray-900'} flex items-center gap-2`}>
+      {theme.showIcons && Icon && <Icon size={14} className={templateId === 'creative' ? 'theme-text' : 'text-gray-400'} />}
       {children}
     </h2>
   );
 
   const renderSummary = () => personalInfo.summary && (
     <section className="mb-6 break-inside-avoid">
-      <SectionHeading>
+      <SectionHeading icon={User}>
         {personalInfo.summaryType === 'objective' ? t.careerObjective : t.profileSummary}
       </SectionHeading>
       <p className="text-sm text-gray-700 leading-relaxed text-justify whitespace-pre-line">
@@ -57,8 +58,8 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
   );
 
   const renderExperience = () => experience.length > 0 && (
-    <section className="mb-6">
-      <SectionHeading>{t.experience}</SectionHeading>
+    <section className={theme.compactMode ? 'mb-4' : 'mb-6'}>
+      <SectionHeading icon={Briefcase}>{t.experience}</SectionHeading>
       <div className="space-y-5">
         {experience.map((exp) => (
           <div key={exp.id} className="break-inside-avoid">
@@ -79,8 +80,8 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
   );
 
   const renderEducation = () => education.length > 0 && (
-    <section className="mb-6">
-      <SectionHeading>{t.education}</SectionHeading>
+    <section className={theme.compactMode ? 'mb-4' : 'mb-6'}>
+      <SectionHeading icon={GraduationCap}>{t.education}</SectionHeading>
       <div className="space-y-4">
         {education.map((edu) => (
           <div key={edu.id} className="break-inside-avoid">
@@ -94,8 +95,8 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
   );
 
   const renderSkills = () => skills.length > 0 && (
-    <section className="mb-6">
-      <SectionHeading>{t.skills}</SectionHeading>
+    <section className={theme.compactMode ? 'mb-4' : 'mb-6'}>
+      <SectionHeading icon={Wrench}>{t.skills}</SectionHeading>
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         {skills.map((skill) => (
           <div key={skill.id} className="break-inside-avoid">
@@ -108,8 +109,8 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
   );
 
   const renderCustomSections = () => customSections.map((section) => (
-    <section key={section.id} className="mb-6 break-inside-avoid">
-      <SectionHeading>{section.title}</SectionHeading>
+    <section key={section.id} className={`${theme.compactMode ? 'mb-4' : 'mb-6'} break-inside-avoid`}>
+      <SectionHeading icon={Layers}>{section.title}</SectionHeading>
       <div className="space-y-4">
         {section.items.map((item) => (
           <div key={item.id} className="break-inside-avoid">
@@ -177,7 +178,7 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
         </div>
       </div>
 
-      {personalInfo.profileImage && (
+      {personalInfo.profileImage && theme.showProfile && (
         <div className="flex-shrink-0">
            <img 
              src={personalInfo.profileImage} 
@@ -231,8 +232,9 @@ export const Preview: React.FC<PreviewProps> = ({ data, scale = 1 }) => {
         backgroundColor: backgroundColor,
         transform: `scale(${scale})`,
         transformOrigin: 'top center',
-        padding: '10mm 15mm',
+        padding: theme.compactMode ? '8mm 12mm' : '10mm 15mm',
         fontFamily: `"${fontFamily}", sans-serif`,
+        lineHeight: theme.compactMode ? '1.4' : '1.6',
       }}
       id="resume-preview"
     >
