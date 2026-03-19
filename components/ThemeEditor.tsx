@@ -1,6 +1,6 @@
 import React from 'react';
 import { Theme, TemplateId } from '../types';
-import { Palette, Type, LayoutTemplate, RotateCcw, Check, Grid } from 'lucide-react';
+import { Palette, Type, LayoutTemplate, RotateCcw, Check, Grid, Sparkles } from 'lucide-react';
 import { translations } from '../translations';
 
 interface ThemeEditorProps {
@@ -9,272 +9,266 @@ interface ThemeEditorProps {
   language?: 'en' | 'mm';
 }
 
-const ACCENT_COLORS = [
-  '#2563eb', // Blue (Default)
-  '#059669', // Emerald
-  '#dc2626', // Red
-  '#7c3aed', // Violet
-  '#db2777', // Pink
-  '#ea580c', // Orange
-  '#000000', // Black
-];
+const ACCENT_COLORS = ['#2563eb', '#0f766e', '#dc2626', '#7c3aed', '#111827', '#ea580c', '#be185d'];
 
-const BG_COLORS = [
-  '#ffffff', // White
-  '#f8fafc', // Slate 50
-  '#f0f9ff', // Sky 50
-  '#fdf2f8', // Pink 50
-  '#fffbeb', // Amber 50
-  '#f0fdf4', // Green 50
-  '#fafafa', // Neutral 50
-];
+const BG_COLORS = ['#ffffff', '#f8fafc', '#eff6ff', '#f8fafc', '#fff7ed', '#f0fdf4', '#fdf4ff'];
 
-const FONTS = [
-  'Inter',
-  'Roboto',
-  'Open Sans',
-  'Lato',
-  'Merriweather'
-];
+const FONTS = ['Manrope', 'IBM Plex Sans', 'DM Sans', 'Space Grotesk', 'Source Serif 4'];
 
-const TEMPLATES: { id: TemplateId, label: string }[] = [
-  { id: 'modern', label: 'Modern Sidebar' },
-  { id: 'classic', label: 'Classic Top Header' },
-  { id: 'sidebar', label: 'Left Sidebar' },
-  { id: 'creative', label: 'Creative Gradient' },
+const TEMPLATES: { id: TemplateId; label: string; blurb: string }[] = [
+  { id: 'modern', label: 'Executive Split', blurb: 'Balanced two-column layout for most professional roles.' },
+  { id: 'classic', label: 'Traditional Brief', blurb: 'Straightforward structure optimized for conservative hiring teams.' },
+  { id: 'sidebar', label: 'Portfolio Rail', blurb: 'Left-leaning identity panel with a strong designer feel.' },
+  { id: 'creative', label: 'Signature Cover', blurb: 'High-contrast presentation with stronger visual personality.' },
 ];
 
 export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange, language = 'en' }) => {
   const t = translations[language];
-  
+
   const handleReset = () => {
     onChange('color', '#2563eb');
     onChange('backgroundColor', '#ffffff');
-    onChange('font', 'Inter');
+    onChange('font', 'Manrope');
     onChange('templateId', 'modern');
     onChange('showProfile', true);
     onChange('showIcons', true);
     onChange('compactMode', false);
+    onChange('profileShape', 'circle');
+    onChange('profileSize', 'md');
+    onChange('profileZoom', 1);
   };
 
   return (
-    <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-200 mb-6 transition-all hover:shadow-xl">
-      <div className="flex justify-between items-center mb-5 border-b border-gray-100 pb-3">
-        <h3 className="text-sm font-bold text-gray-800 flex items-center uppercase tracking-wider">
-          <Palette size={16} className="mr-2 text-blue-600" /> {t.theme}
-        </h3>
-        <button 
-          onClick={handleReset}
-          className="text-xs flex items-center text-gray-500 hover:text-red-600 transition-colors font-medium"
-          title="Reset to Default Theme"
-        >
-          <RotateCcw size={12} className="mr-1" /> Reset
-        </button>
-      </div>
-
-       {/* Templates */}
-       <div className="mb-6">
-        <label className="text-xs font-bold text-gray-500 mb-3 block uppercase flex items-center">
-          <Grid size={12} className="mr-1" /> Choose Template
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          {TEMPLATES.map((tpl) => (
-            <button
-              key={tpl.id}
-              onClick={() => onChange('templateId', tpl.id)}
-              className={`px-3 py-4 text-xs rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-2 ${
-                theme.templateId === tpl.id 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-bold ring-2 ring-blue-500 shadow-md' 
-                  : 'border-gray-200 hover:bg-gray-50 text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              <div className={`w-full h-8 rounded border border-dashed ${theme.templateId === tpl.id ? 'border-blue-300 bg-blue-100' : 'border-gray-300 bg-gray-50'}`}></div>
-              {tpl.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Accent Colors */}
-      <div className="mb-6">
-        <label className="text-xs font-bold text-gray-500 mb-3 block uppercase">Accent Color</label>
-        <div className="flex flex-wrap gap-3">
-          {ACCENT_COLORS.map((color) => (
-            <button
-              key={color}
-              onClick={() => onChange('color', color)}
-              className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110 ${
-                theme.color === color 
-                  ? 'border-white ring-2 ring-blue-500 shadow-md scale-110' 
-                  : 'border-transparent hover:shadow-sm'
-              }`}
-              style={{ backgroundColor: color }}
-              aria-label={`Select accent color ${color}`}
-            >
-              {theme.color === color && <Check size={14} className="text-white drop-shadow-md" />}
-            </button>
-          ))}
-          <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors">
-             <input 
-              type="color" 
-              value={theme.color}
-              onChange={(e) => onChange('color', e.target.value)}
-              className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer p-0 border-0"
-              title="Custom Accent Color"
-            />
+    <div className="theme-editor-card overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_25px_60px_rgba(15,23,42,0.08)]">
+      <div className="relative overflow-hidden border-b border-slate-100 px-5 py-5">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.18),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.96))]" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div>
+            <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.26em] text-white">
+              <Sparkles size={12} />
+              Design control
+            </span>
+            <h3 className="text-lg font-black tracking-tight text-slate-950">{t.theme}</h3>
+            <p className="mt-2 text-sm text-slate-500">Tune the document system, typography, and visual density from one place.</p>
           </div>
+          <button
+            onClick={handleReset}
+            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition-colors hover:border-slate-300 hover:text-red-600"
+            title="Reset to default theme"
+          >
+            <RotateCcw size={12} className="mr-2" /> Reset
+          </button>
         </div>
       </div>
 
-      {/* Background Colors */}
-      <div className="mb-6">
-        <label className="text-xs font-bold text-gray-500 mb-3 block uppercase flex items-center">
-          <LayoutTemplate size={12} className="mr-1" /> Paper Color
-        </label>
-        <div className="flex flex-wrap gap-3">
-          {BG_COLORS.map((color) => (
-            <button
-              key={color}
-              onClick={() => onChange('backgroundColor', color)}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all hover:scale-110 ${
-                theme.backgroundColor === color 
-                  ? 'border-blue-500 ring-2 ring-blue-100 shadow-md scale-110' 
-                  : 'border-gray-200'
-              }`}
-              style={{ backgroundColor: color }}
-              aria-label={`Select background color ${color}`}
-            >
-               {theme.backgroundColor === color && <Check size={14} className="text-gray-800" />}
-            </button>
-          ))}
-           <div className="relative w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors">
-            <input 
-              type="color" 
-              value={theme.backgroundColor}
-              onChange={(e) => onChange('backgroundColor', e.target.value)}
-              className="absolute -top-2 -left-2 w-12 h-12 cursor-pointer p-0 border-0"
-              title="Custom Background Color"
-            />
+      <div className="space-y-8 p-5">
+        <section>
+          <label className="mb-3 flex items-center text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+            <Grid size={12} className="mr-2" /> Template system
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                onClick={() => onChange('templateId', tpl.id)}
+                className={`rounded-[24px] border p-4 text-left transition-all ${
+                  theme.templateId === tpl.id
+                    ? 'border-blue-500 bg-blue-50 shadow-[0_16px_40px_rgba(37,99,235,0.12)] ring-2 ring-blue-200'
+                    : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white'
+                }`}
+              >
+                <div className={`mb-3 h-10 rounded-2xl border ${theme.templateId === tpl.id ? 'border-blue-300 bg-[linear-gradient(135deg,rgba(37,99,235,0.16),rgba(15,23,42,0.08))]' : 'border-slate-200 bg-white'}`} />
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">{tpl.label}</div>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">{tpl.blurb}</p>
+                  </div>
+                  {theme.templateId === tpl.id && <Check size={16} className="mt-1 text-blue-600" />}
+                </div>
+              </button>
+            ))}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Fonts */}
-      <div>
-        <label className="text-xs font-bold text-gray-500 mb-3 block uppercase flex items-center">
-          <Type size={12} className="mr-1" /> Font Family
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {FONTS.map((font) => (
-            <button
-              key={font}
-              onClick={() => onChange('font', font)}
-              className={`px-3 py-2 text-sm rounded-lg border text-left transition-all ${
-                theme.font === font 
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium ring-1 ring-blue-500 shadow-sm' 
-                  : 'border-gray-200 hover:bg-gray-50 text-gray-700 hover:border-gray-300'
-              }`}
-              style={{ fontFamily: font }}
-            >
-              {font}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Layout Options */}
-      <div className="mt-8 border-t border-gray-100 pt-6">
-        <label className="text-xs font-bold text-gray-500 mb-4 block uppercase flex items-center">
-          <LayoutTemplate size={12} className="mr-1" /> {language === 'en' ? 'Layout Fine-tuning' : 'ကိုယ်ပိုင် စိတ်ကြိုက်ပြင်ဆင်မှု'}
-        </label>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Show Profile Image */}
-            <div className="flex flex-col gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-               <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Profile Picture' : 'ဓါတ်ပုံပြရန်'}</span>
-                  <button 
-                    onClick={() => onChange('showProfile', !theme.showProfile)}
-                    className={`w-10 h-5 rounded-full relative transition-colors ${theme.showProfile ? 'bg-blue-600' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.showProfile ? 'left-6' : 'left-1'}`} />
-                  </button>
-               </div>
-
-               {theme.showProfile && (
-                 <>
-                   <div className="pt-2 border-t border-gray-200">
-                     <span className="text-[10px] font-bold text-gray-400 uppercase mb-2 block">{language === 'en' ? 'Shape' : 'ပုံသဏ္ဍာန်'}</span>
-                     <div className="flex gap-2">
-                        {(['circle', 'rounded', 'square'] as const).map(shape => (
-                          <button 
-                            key={shape}
-                            onClick={() => onChange('profileShape', shape)}
-                            className={`flex-1 py-1 text-[10px] font-bold rounded border capitalize ${theme.profileShape === shape ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-600'}`}
-                          >
-                            {shape}
-                          </button>
-                        ))}
-                     </div>
-                   </div>
-
-                   <div className="pt-2">
-                     <span className="text-[10px] font-bold text-gray-400 uppercase mb-2 block">{language === 'en' ? 'Size' : 'အရွယ်အစား'}</span>
-                     <div className="flex gap-2">
-                        {(['sm', 'md', 'lg'] as const).map(size => (
-                          <button 
-                            key={size}
-                            onClick={() => onChange('profileSize', size)}
-                            className={`flex-1 py-1 text-[10px] font-bold rounded border uppercase ${theme.profileSize === size ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-600'}`}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                     </div>
-                   </div>
-
-                   <div className="pt-2">
-                     <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">{language === 'en' ? 'Zoom' : 'ဇူးမ်ချဲ့ရန်'}</span>
-                        <span className="text-[10px] font-bold text-blue-600">{Math.round(theme.profileZoom * 100)}%</span>
-                     </div>
-                     <input 
-                       type="range"
-                       min="0.5"
-                       max="2.5"
-                       step="0.1"
-                       value={theme.profileZoom}
-                       onChange={(e) => onChange('profileZoom', parseFloat(e.target.value))}
-                       className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                     />
-                   </div>
-                 </>
-               )}
+        <section className="grid gap-8 xl:grid-cols-2">
+          <div>
+            <label className="mb-3 flex items-center text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+              <Palette size={12} className="mr-2" /> Accent color
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {ACCENT_COLORS.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => onChange('color', color)}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all hover:scale-110 ${theme.color === color ? 'border-white ring-2 ring-blue-400 shadow-lg scale-110' : 'border-transparent'}`}
+                  style={{ backgroundColor: color }}
+                  aria-label={`Select accent color ${color}`}
+                >
+                  {theme.color === color && <Check size={14} className="text-white" />}
+                </button>
+              ))}
+              <div className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-slate-200 transition-colors hover:border-blue-400">
+                <input
+                  type="color"
+                  value={theme.color}
+                  onChange={(e) => onChange('color', e.target.value)}
+                  className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                  title="Custom accent color"
+                />
+              </div>
             </div>
-           
-           {/* Compact Mode */}
-           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-              <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Compact Mode' : 'ကျစ်ကျစ်လစ်လစ်'}</span>
-              <button 
-                onClick={() => onChange('compactMode', !theme.compactMode)}
-                className={`w-10 h-5 rounded-full relative transition-colors ${theme.compactMode ? 'bg-blue-600' : 'bg-gray-300'}`}
-              >
-                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.compactMode ? 'left-6' : 'left-1'}`} />
-              </button>
-           </div>
+          </div>
 
-           {/* Show Section Icons */}
-           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-              <span className="text-xs font-semibold text-gray-700">{language === 'en' ? 'Section Icons' : 'သင်္ကေတများ'}</span>
-              <button 
-                onClick={() => onChange('showIcons', !theme.showIcons)}
-                className={`w-10 h-5 rounded-full relative transition-colors ${theme.showIcons ? 'bg-blue-600' : 'bg-gray-300'}`}
+          <div>
+            <label className="mb-3 flex items-center text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+              <LayoutTemplate size={12} className="mr-2" /> Paper tone
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {BG_COLORS.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => onChange('backgroundColor', color)}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all hover:scale-110 ${theme.backgroundColor === color ? 'border-blue-500 ring-2 ring-blue-100 shadow-lg scale-110' : 'border-slate-200'}`}
+                  style={{ backgroundColor: color }}
+                  aria-label={`Select background color ${color}`}
+                >
+                  {theme.backgroundColor === color && <Check size={14} className="text-slate-900" />}
+                </button>
+              ))}
+              <div className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-slate-200 transition-colors hover:border-blue-400">
+                <input
+                  type="color"
+                  value={theme.backgroundColor}
+                  onChange={(e) => onChange('backgroundColor', e.target.value)}
+                  className="absolute -left-2 -top-2 h-14 w-14 cursor-pointer border-0 p-0"
+                  title="Custom background color"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <label className="mb-3 flex items-center text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+            <Type size={12} className="mr-2" /> Typography
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {FONTS.map((font) => (
+              <button
+                key={font}
+                onClick={() => onChange('font', font)}
+                className={`rounded-2xl border px-4 py-3 text-left transition-all ${theme.font === font ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-400 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'}`}
+                style={{ fontFamily: font }}
               >
-                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${theme.showIcons ? 'left-6' : 'left-1'}`} />
+                <div className="text-sm font-semibold">{font}</div>
+                <div className="mt-1 text-xs opacity-70">Aa Bb Cc</div>
               </button>
-           </div>
-        </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <label className="mb-4 flex items-center text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
+            <LayoutTemplate size={12} className="mr-2" /> {language === 'en' ? 'Layout tuning' : 'စိတ်ကြိုက် Layout ပြင်ဆင်မှု'}
+          </label>
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <div className="rounded-[26px] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-700">{language === 'en' ? 'Profile picture' : 'ဓာတ်ပုံပြသရန်'}</span>
+                <button
+                  onClick={() => onChange('showProfile', !theme.showProfile)}
+                  className={`relative h-6 w-11 rounded-full transition-colors ${theme.showProfile ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${theme.showProfile ? 'left-6' : 'left-1'}`} />
+                </button>
+              </div>
+
+              {theme.showProfile && (
+                <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
+                  <div>
+                    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{language === 'en' ? 'Shape' : 'ပုံသဏ္ဍာန်'}</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['circle', 'rounded', 'square'] as const).map((shape) => (
+                        <button
+                          key={shape}
+                          onClick={() => onChange('profileShape', shape)}
+                          className={`rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${theme.profileShape === shape ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600'}`}
+                        >
+                          {shape}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{language === 'en' ? 'Size' : 'အရွယ်အစား'}</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['sm', 'md', 'lg'] as const).map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => onChange('profileSize', size)}
+                          className={`rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] transition-all ${theme.profileSize === size ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-600'}`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{language === 'en' ? 'Zoom' : 'ချဲ့မှု'}</span>
+                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">{Math.round(theme.profileZoom * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2.5"
+                      step="0.1"
+                      value={theme.profileZoom}
+                      onChange={(e) => onChange('profileZoom', parseFloat(e.target.value))}
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-600"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-[26px] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <span className="text-xs font-semibold text-slate-700">{language === 'en' ? 'Compact mode' : 'ကျစ်လျစ်သော mode'}</span>
+                <button
+                  onClick={() => onChange('compactMode', !theme.compactMode)}
+                  className={`relative h-6 w-11 rounded-full transition-colors ${theme.compactMode ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${theme.compactMode ? 'left-6' : 'left-1'}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between rounded-[26px] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <span className="text-xs font-semibold text-slate-700">{language === 'en' ? 'Section icons' : 'Section icon များ'}</span>
+                <button
+                  onClick={() => onChange('showIcons', !theme.showIcons)}
+                  className={`relative h-6 w-11 rounded-full transition-colors ${theme.showIcons ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${theme.showIcons ? 'left-6' : 'left-1'}`} />
+                </button>
+              </div>
+
+              <div className="rounded-[26px] border border-slate-200 bg-slate-950 p-4 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)]">
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-200">Current profile</div>
+                <div className="mt-3 text-sm font-semibold">{TEMPLATES.find((tpl) => tpl.id === theme.templateId)?.label}</div>
+                <p className="mt-2 text-xs leading-6 text-slate-300">
+                  {language === 'en'
+                    ? 'This setup blends premium typography, ATS-safe spacing, and brandable visual hierarchy.'
+                    : 'ဒီ setup က ATS-safe spacing နဲ့ brand identity ကို တစ်ပြိုင်နက်ပေါင်းစပ်ထားပါတယ်။'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
-};
+};

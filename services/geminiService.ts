@@ -28,6 +28,25 @@ const hasApiKey = (): boolean => resolveApiKey().length > 0;
 
 const modelId = 'gemini-2.0-flash';
 
+const normalizeSkillLevel = (value: unknown): Skill["level"] => {
+  if (typeof value === "number") {
+    const rounded = Math.round(value);
+    if (rounded >= 1 && rounded <= 5) {
+      return rounded as Skill["level"];
+    }
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["beginner", "basic", "novice"].includes(normalized)) return 2;
+    if (["intermediate", "proficient", "competent"].includes(normalized)) return 3;
+    if (["advanced", "strong"].includes(normalized)) return 4;
+    if (["expert", "specialist", "master"].includes(normalized)) return 5;
+  }
+
+  return 3;
+};
+
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -309,7 +328,11 @@ export const parseResumeContent = async (content: string, mimeType: string = 'te
             parsed.education = parsed.education.map((e: any) => ({ ...e, id: crypto.randomUUID() }));
         }
         if (parsed.skills) {
-            parsed.skills = parsed.skills.map((s: any) => ({ ...s, id: crypto.randomUUID(), level: s.level || 'Intermediate' }));
+            parsed.skills = parsed.skills.map((s: any) => ({
+              ...s,
+              id: crypto.randomUUID(),
+              level: normalizeSkillLevel(s.level),
+            }));
         }
 
         return parsed;

@@ -9,30 +9,33 @@ interface InputGroupProps {
   multiline?: boolean;
 }
 
-export const InputGroup: React.FC<InputGroupProps> = ({ 
-  label, 
-  value, 
-  onChange, 
-  placeholder, 
-  type = "text", 
-  multiline = false 
+export const InputGroup: React.FC<InputGroupProps> = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  multiline = false,
 }) => {
+  const inputClassName =
+    'w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-[0_10px_25px_rgba(15,23,42,0.04)] transition-all placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100';
+
   return (
     <div className="mb-4">
-      <label className="block text-sm font-bold text-gray-700 mb-1.5">{label}</label>
+      <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">{label}</label>
       {multiline ? (
         <textarea
-          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm min-h-[120px] resize-y placeholder-gray-400 text-gray-900"
+          className={`${inputClassName} min-h-[120px] resize-y`}
           value={value}
-          onChange={e => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
         />
       ) : (
         <input
           type={type}
-          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm placeholder-gray-400 text-gray-900"
+          className={inputClassName}
           value={value}
-          onChange={e => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
         />
       )}

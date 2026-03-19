@@ -20,6 +20,65 @@ import { translations } from './translations';
 
 declare const html2pdf: any;
 
+const createDefaultTheme = (themeOverrides: Partial<Theme> = {}): Theme => ({
+  color: '#2563eb',
+  backgroundColor: '#ffffff',
+  font: 'Manrope',
+  templateId: 'modern',
+  showProfile: true,
+  profileShape: 'circle',
+  profileSize: 'md',
+  profileZoom: 1.0,
+  showIcons: true,
+  compactMode: false,
+  ...themeOverrides,
+});
+
+const createDefaultResumeData = (
+  language: ResumeData['language'] = 'en',
+  themeOverrides: Partial<Theme> = {}
+): ResumeData => ({
+  personalInfo: {
+    fullName: '',
+    email: '',
+    phone: '',
+    location: '',
+    linkedin: '',
+    website: '',
+    summary: '',
+    summaryType: 'summary',
+    jobTitle: '',
+    profileImage: null,
+  },
+  docType: 'cv',
+  experience: [],
+  education: [],
+  skills: [],
+  customSections: [],
+  theme: createDefaultTheme(themeOverrides),
+  sectionOrder: ['summary', 'experience', 'education', 'skills', 'custom'],
+  language,
+});
+
+const hydrateResumeData = (value: Partial<ResumeData> | null | undefined): ResumeData => {
+  const base = createDefaultResumeData(value?.language || 'en', value?.theme || {});
+  const personalInfo = { ...base.personalInfo, ...(value?.personalInfo || {}) };
+  const theme = createDefaultTheme(value?.theme || {});
+  const sectionOrder = value?.sectionOrder && value.sectionOrder.length > 0 ? value.sectionOrder : base.sectionOrder;
+
+  return {
+    ...base,
+    ...value,
+    personalInfo,
+    theme,
+    experience: value?.experience || [],
+    education: value?.education || [],
+    skills: value?.skills || [],
+    customSections: value?.customSections || [],
+    sectionOrder,
+  };
+};
+
 const App = () => {
   const [step, setStep] = useState<WizardStep>(WizardStep.PERSONAL);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -31,6 +90,7 @@ const App = () => {
   
   // Ref for auto-scrolling to new items
   const bottomRef = useRef<HTMLDivElement>(null);
+  const skipNextCloudSyncRef = useRef(false);
 
   const { user, loginWithGoogle, logout } = useAuth();
   const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
@@ -43,55 +103,12 @@ const App = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Ensure new fields exist for existing users
-        if (!parsed.docType) parsed.docType = 'cv';
-        if (parsed.personalInfo && !parsed.personalInfo.summaryType) parsed.personalInfo.summaryType = 'summary';
-        if (parsed.theme && !parsed.theme.profileShape) {
-          parsed.theme.profileShape = 'circle';
-          parsed.theme.profileSize = 'md';
-          parsed.theme.profileZoom = 1.0;
-        }
-        if (parsed.theme && parsed.theme.profileZoom === undefined) {
-          parsed.theme.profileZoom = 1.0;
-        }
-        return parsed;
+        return hydrateResumeData(parsed);
       } catch (e) {
         console.error('Failed to parse saved data', e);
       }
     }
-    return {
-      personalInfo: {
-        fullName: '',
-        email: '',
-        phone: '',
-        location: '',
-        linkedin: '',
-        website: '',
-        summary: '',
-        summaryType: 'summary',
-        jobTitle: '',
-        profileImage: null,
-      },
-      docType: 'cv',
-      experience: [],
-      education: [],
-      skills: [],
-      customSections: [],
-      theme: {
-        color: '#2563eb',
-        backgroundColor: '#ffffff',
-        font: 'Inter',
-        templateId: 'modern',
-        showProfile: true,
-        profileShape: 'circle',
-        profileSize: 'md',
-        profileZoom: 1.0,
-        showIcons: true,
-        compactMode: false,
-      },
-      sectionOrder: ['summary', 'experience', 'education', 'skills', 'custom'],
-      language: 'en'
-    };
+    return createDefaultResumeData();
   });
 
   const debouncedResumeData = useDebounce(resumeData, 500);
@@ -105,8 +122,12 @@ const App = () => {
   // Cloud Sync
   useEffect(() => {
     if (user) {
+        if (skipNextCloudSyncRef.current) {
+            skipNextCloudSyncRef.current = false;
+            return;
+        }
         const timeout = setTimeout(() => {
-            saveResumeToCloud(user.uid, resumeData, activeResumeId || undefined)
+            saveResumeToCloud(user.uid, debouncedResumeData, activeResumeId || undefined)
                 .then(id => {
                     if (id && !activeResumeId) setActiveResumeId(id);
                     setLastSaved(new Date());
@@ -140,6 +161,8 @@ const App = () => {
     if (user) {
         const resumes = await getResumesByUser(user.uid);
         setSavedResumes(resumes);
+    } else {
+        setSavedResumes([]);
     }
   };
 
@@ -150,7 +173,7 @@ const App = () => {
   const handleSelectResume = (resumeId: string) => {
     const selected = savedResumes.find(r => r.id === resumeId);
     if (selected) {
-        setResumeData(selected.data);
+        setResumeData(hydrateResumeData(selected.data));
         setActiveResumeId(selected.id);
         setShowResumesModal(false);
     }
@@ -158,14 +181,7 @@ const App = () => {
 
   const createNewResume = () => {
     setActiveResumeId(null);
-    setResumeData(prev => ({
-        ...prev,
-        personalInfo: { ...prev.personalInfo, fullName: '', summary: '' },
-        experience: [],
-        education: [],
-        skills: [],
-        customSections: []
-    }));
+    setResumeData(prev => createDefaultResumeData(prev.language, prev.theme));
     setShowResumesModal(false);
   };
 
@@ -173,7 +189,11 @@ const App = () => {
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this resume?")) {
         await deleteResumeFromCloud(id);
-        if (activeResumeId === id) setActiveResumeId(null);
+        if (activeResumeId === id) {
+            skipNextCloudSyncRef.current = true;
+            setActiveResumeId(null);
+            setResumeData(prev => createDefaultResumeData(prev.language, prev.theme));
+        }
         loadUserResumes();
     }
   };
@@ -528,28 +548,74 @@ const App = () => {
     link.click();
   };
 
+  const stepItems = [
+    { id: WizardStep.PERSONAL, icon: User, label: t.personal, caption: resumeData.language === 'en' ? 'Identity and role targeting' : 'အမည်နှင့် ရည်မှန်းထားသည့်ရာထူး' },
+    { id: WizardStep.EXPERIENCE, icon: Briefcase, label: t.experience, caption: resumeData.language === 'en' ? 'Achievement-based history' : 'လုပ်ငန်းအတွေ့အကြုံနှင့် ရလဒ်များ' },
+    { id: WizardStep.EDUCATION, icon: GraduationCap, label: t.education, caption: resumeData.language === 'en' ? 'Academic signal' : 'ပညာရေး နောက်ခံ' },
+    { id: WizardStep.SKILLS, icon: Wrench, label: t.skills, caption: resumeData.language === 'en' ? 'Capability mapping' : 'ကျွမ်းကျင်မှု များဖော်ပြခြင်း' },
+    { id: WizardStep.CUSTOM, icon: Layers, label: t.custom, caption: resumeData.language === 'en' ? 'Awards, projects, certifications' : 'Projects, Awards, Certifications' },
+    { id: WizardStep.THEME, icon: Edit3, label: t.theme, caption: resumeData.language === 'en' ? 'Brand, typography, density' : 'Design, Font နှင့် Layout' },
+    { id: WizardStep.FINALIZE, icon: Download, label: t.finalize, caption: resumeData.language === 'en' ? 'Export and delivery' : 'ထုတ်ယူရန်နှင့် အပြီးသတ်ရန်' },
+  ];
+
+  const currentStepMeta = stepItems.find((item) => item.id === step) || stepItems[0];
+  const completionChecks = [
+    Boolean(resumeData.personalInfo.fullName),
+    Boolean(resumeData.personalInfo.jobTitle),
+    Boolean(resumeData.personalInfo.summary),
+    resumeData.experience.length > 0,
+    resumeData.education.length > 0,
+    resumeData.skills.length > 0,
+  ];
+  const completionPercent = Math.round((completionChecks.filter(Boolean).length / completionChecks.length) * 100);
+  const activeDocumentName = resumeData.personalInfo.fullName || (resumeData.docType === 'cv' ? 'Untitled CV' : 'Untitled Resume');
+  const savedStatusLabel = user
+    ? lastSaved
+      ? `${resumeData.language === 'en' ? 'Saved' : 'သိမ်းပြီး'} ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+      : resumeData.language === 'en'
+        ? 'Cloud sync ready'
+        : 'Cloud sync အဆင်သင့်'
+    : resumeData.language === 'en'
+      ? 'Local draft'
+      : 'Local draft';
+  const missingSignals = [
+    !resumeData.personalInfo.fullName && (resumeData.language === 'en' ? 'Candidate name' : 'အမည်'),
+    !resumeData.personalInfo.jobTitle && (resumeData.language === 'en' ? 'Target role' : 'ရာထူး'),
+    !resumeData.personalInfo.summary && (resumeData.language === 'en' ? 'Professional summary' : 'Summary'),
+    resumeData.experience.length === 0 && (resumeData.language === 'en' ? 'Work experience' : 'အတွေ့အကြုံ'),
+    resumeData.skills.length === 0 && (resumeData.language === 'en' ? 'Skills' : 'ကျွမ်းကျင်မှုများ'),
+  ].filter(Boolean) as string[];
+  const editorStats = [
+    { label: resumeData.language === 'en' ? 'Completion' : 'ပြီးစီးမှု', value: `${completionPercent}%` },
+    { label: resumeData.language === 'en' ? 'Experience' : 'Experience', value: `${resumeData.experience.length}` },
+    { label: resumeData.language === 'en' ? 'Skills' : 'Skills', value: `${resumeData.skills.length}` },
+    { label: resumeData.language === 'en' ? 'Variants' : 'Documents', value: `${Math.max(savedResumes.length, activeResumeId ? 1 : 0)}` },
+  ];
+
   const Steps = () => (
-    <div className="flex space-x-2 mb-8 overflow-x-auto pb-2 no-print scrollbar-hide">
-      {[
-        { id: WizardStep.PERSONAL, icon: User, label: t.personal },
-        { id: WizardStep.EXPERIENCE, icon: Briefcase, label: t.experience },
-        { id: WizardStep.EDUCATION, icon: GraduationCap, label: t.education },
-        { id: WizardStep.SKILLS, icon: Wrench, label: t.skills },
-        { id: WizardStep.CUSTOM, icon: Layers, label: t.custom },
-        { id: WizardStep.THEME, icon: Edit3, label: t.theme },
-        { id: WizardStep.FINALIZE, icon: Download, label: t.finalize },
-      ].map((s) => (
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+      {stepItems.map((s, index) => (
         <button
           key={s.id}
           onClick={() => setStep(s.id)}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-full whitespace-nowrap transition-all duration-200 ${
+          className={`group flex items-center gap-3 rounded-[22px] border px-4 py-4 text-left transition-all duration-200 ${
             step === s.id 
-              ? 'bg-blue-600 text-white shadow-md transform scale-105' 
-              : 'bg-white text-gray-500 hover:bg-gray-100'
+              ? 'border-blue-500 bg-blue-50 shadow-[0_16px_32px_rgba(37,99,235,0.12)]'
+              : 'border-slate-200 bg-white/80 hover:border-slate-300 hover:bg-white'
           }`}
         >
-          <s.icon size={16} />
-          <span className="text-sm font-medium">{s.label}</span>
+          <span className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+            step === s.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-900 group-hover:text-white'
+          }`}>
+            <s.icon size={18} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={`block text-xs font-black uppercase tracking-[0.2em] ${step === s.id ? 'text-blue-600' : 'text-slate-400'}`}>
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <span className={`mt-1 block text-sm font-semibold ${step === s.id ? 'text-slate-950' : 'text-slate-700'}`}>{s.label}</span>
+            <span className="mt-1 block text-xs leading-5 text-slate-500">{s.caption}</span>
+          </span>
         </button>
       ))}
     </div>
@@ -1067,7 +1133,7 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col">
       <ImportModal 
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
@@ -1076,176 +1142,266 @@ const App = () => {
       />
       
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-30 no-print">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="bg-blue-600 text-white p-2 rounded-lg mr-3">
-                <Briefcase size={20} />
+      <nav className="sticky top-0 z-30 px-4 pt-4 no-print sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="rounded-[30px] border border-white/70 bg-white/85 px-4 py-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-[linear-gradient(135deg,#2563eb_0%,#0f172a_100%)] text-white shadow-[0_18px_40px_rgba(37,99,235,0.25)]">
+                  <Briefcase size={24} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-white">
+                      Industrial Studio
+                    </span>
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-blue-700">
+                      {resumeData.docType === 'cv' ? t.cv : t.resume}
+                    </span>
+                  </div>
+                  <h1 className="mt-2 truncate text-2xl font-black tracking-tight text-slate-950">CVWizard</h1>
+                  <p className="truncate text-sm text-slate-500">
+                    {activeDocumentName} · {savedStatusLabel}
+                  </p>
+                </div>
               </div>
-              <span className="text-xl font-bold text-gray-900">ResumeAI</span>
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-               {/* Language Toggle */}
-               <div className="flex bg-gray-100 p-1 rounded-lg mr-2 no-print">
-                 <button 
-                  onClick={() => setResumeData(prev => ({ ...prev, language: 'en' }))}
-                  className={`px-2 py-1 text-xs font-bold rounded ${resumeData.language === 'en' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
-                 >
-                   EN
-                 </button>
-                 <button 
-                  onClick={() => setResumeData(prev => ({ ...prev, language: 'mm' }))}
-                  className={`px-2 py-1 text-xs font-bold rounded ${resumeData.language === 'mm' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
-                 >
-                   MM
-                 </button>
-               </div>
 
-               {/* Cloud Saving Indicator */}
-                {user && lastSaved && (
-                   <div className="hidden md:flex items-center text-[10px] text-green-600 font-medium">
-                     <Check size={12} className="mr-1" /> Cloud Saved
-                   </div>
-                )}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex rounded-2xl bg-slate-100 p-1">
+                  <button
+                    onClick={() => setResumeData(prev => ({ ...prev, language: 'en' }))}
+                    className={`rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.18em] transition-all ${resumeData.language === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    EN
+                  </button>
+                  <button
+                    onClick={() => setResumeData(prev => ({ ...prev, language: 'mm' }))}
+                    className={`rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.18em] transition-all ${resumeData.language === 'mm' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    MM
+                  </button>
+                </div>
 
-                {/* Resumes Library */}
+                <div className="hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700 md:flex md:items-center md:gap-2">
+                  <Check size={14} />
+                  {savedStatusLabel}
+                </div>
+
                 {user && (
-                  <button 
+                  <button
                     onClick={() => setShowResumesModal(true)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-1 text-sm font-medium"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900"
                     title="My Documents"
                   >
-                    <Folder size={18} />
-                    <span className="hidden sm:inline">My Documents</span>
+                    <Folder size={16} />
+                    <span className="hidden sm:inline">Library</span>
                   </button>
                 )}
 
-                {/* User Auth */}
                 {!user ? (
-                   <Button 
-                    onClick={loginWithGoogle} 
-                    variant="outline" 
-                    size="sm" 
-                    icon={<UserCircle size={18} />}
-                   >
-                     Login
-                   </Button>
+                  <Button onClick={loginWithGoogle} variant="outline" icon={<UserCircle size={18} />}>
+                    Login
+                  </Button>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <img 
-                      src={user.photoURL || ''} 
-                      alt="User" 
-                      className="w-8 h-8 rounded-full border border-gray-200"
-                    />
-                     <button 
-                      onClick={logout}
-                      className="p-2 text-gray-500 hover:text-red-600 transition-colors"
-                      title="Logout"
-                    >
+                  <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-2">
+                    <img src={user.photoURL || ''} alt="User" className="h-8 w-8 rounded-full border border-slate-200" />
+                    <button onClick={logout} className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-red-600" title="Logout">
                       <LogOut size={18} />
                     </button>
-                    
-                    <Button 
+                    <Button
                       onClick={handleManualSave}
                       variant="primary"
-                      size="sm"
                       icon={loadingAI === 'save' ? <span className="animate-spin text-[10px]">...</span> : <Save size={16} />}
-                      className="hidden md:flex ml-2"
+                      className="hidden md:inline-flex"
                     >
                       {loadingAI === 'save' ? 'Saving...' : 'Save'}
                     </Button>
                   </div>
                 )}
-                
-               <button 
-                onClick={() => setIsPreviewMode(!isPreviewMode)}
-                className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-               >
-                 {isPreviewMode ? <Edit3 size={20} /> : <Eye size={20} />}
-               </button>
-               
-               <Button onClick={handleExportTXT} variant="ghost" className="hidden sm:flex text-xs">
-                 TXT
-               </Button>
-               <Button onClick={handlePrint} variant="outline" icon={<Printer size={16} />} className="hidden sm:flex">
-                 Print
-               </Button>
-               <Button onClick={handleDownloadPDF} variant="primary" icon={<Download size={16} />} disabled={isExporting} className="hidden sm:flex">
-                 {isExporting ? '...' : 'Download'}
-               </Button>
+
+                <button
+                  onClick={() => setIsPreviewMode(!isPreviewMode)}
+                  className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-600 transition-colors hover:bg-slate-50 lg:hidden"
+                >
+                  {isPreviewMode ? <Edit3 size={18} /> : <Eye size={18} />}
+                </button>
+
+                <Button onClick={handleExportTXT} variant="ghost" className="hidden sm:inline-flex">
+                  TXT
+                </Button>
+                <Button onClick={handlePrint} variant="outline" icon={<Printer size={16} />} className="hidden sm:inline-flex">
+                  Print
+                </Button>
+                <Button onClick={handleDownloadPDF} variant="ai" icon={<Download size={16} />} disabled={isExporting} className="hidden sm:inline-flex">
+                  {isExporting ? 'Preparing...' : 'Export PDF'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
-          
-          {/* Editor Column (Wizard) */}
-          <div className={`lg:col-span-5 flex flex-col h-full wizard-col ${isPreviewMode ? 'hidden lg:flex' : 'flex'} no-print`}>
-            <Steps />
-            
-            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 flex-1 overflow-y-auto">
-               {renderStepContent()}
+      <main className="mx-auto flex-1 max-w-7xl w-full p-4 sm:p-6 lg:p-8">
+        <section className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] no-print">
+          <div className="relative overflow-hidden rounded-[34px] bg-slate-950 p-6 text-white shadow-[0_35px_90px_rgba(15,23,42,0.24)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.38),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.96))]" />
+            <div className="relative">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-blue-100">
+                  Resume Operations
+                </span>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-200">
+                  {currentStepMeta.label}
+                </span>
+              </div>
+              <h2 className="max-w-2xl text-3xl font-black tracking-tight">
+                {resumeData.language === 'en'
+                  ? 'Build client-ready CVs and resumes with a stronger editorial system.'
+                  : 'Client-ready CV နှင့် Resume များကို ပိုမိုတိကျသော editorial system ဖြင့် တည်ဆောက်ပါ။'}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+                {resumeData.language === 'en'
+                  ? 'This workspace combines live preview, AI-assisted writing, document variants, and export tooling in one professional flow.'
+                  : 'Live preview, AI writing assistant, document variants နှင့် export tooling ကို professional flow တစ်ခုတည်းအောက်တွင် ပေါင်းစပ်ထားပါသည်။'}
+              </p>
 
-               <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
-                 <Button 
-                    variant="ghost" 
-                    onClick={() => setStep(prev => Math.max(0, prev - 1))}
-                    disabled={step === 0}
-                    icon={<ChevronLeft size={16} />}
-                  >
-                    Back
-                  </Button>
-                  
-                  {step < WizardStep.FINALIZE && (
-                    <Button 
-                      onClick={() => setStep(prev => Math.min(WizardStep.FINALIZE, prev + 1))}
-                    >
-                      Next <ChevronRight size={16} className="ml-2" />
-                    </Button>
-                  )}
-               </div>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {editorStats.map((stat) => (
+                  <div key={stat.label} className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm">
+                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">{stat.label}</div>
+                    <div className="mt-2 text-2xl font-black tracking-tight text-white">{stat.value}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Preview Column */}
-          <div className={`lg:col-span-7 flex flex-col items-center bg-gray-200 rounded-2xl overflow-hidden relative ${isPreviewMode ? 'flex fixed inset-0 z-50 p-4 bg-gray-900 overflow-auto' : 'hidden lg:flex'}`}>
-            <div className="absolute top-4 right-4 z-40 flex items-center gap-2 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-xl no-print">
-              <span className="text-[10px] font-bold text-gray-400 px-2 uppercase tracking-widest">Zoom</span>
-              <input 
-                type="range" 
-                min="0.3" 
-                max="1.5" 
-                step="0.05" 
-                value={zoom} 
+          <div className="rounded-[34px] border border-slate-200 bg-white p-6 shadow-[0_25px_60px_rgba(15,23,42,0.08)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-blue-700">
+                  Live readiness
+                </span>
+                <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950">{completionPercent}% complete</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-500">{currentStepMeta.caption}</p>
+              </div>
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-950 text-lg font-black text-white">
+                {completionPercent}
+              </div>
+            </div>
+
+            <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-[linear-gradient(90deg,#2563eb_0%,#0f172a_100%)] transition-all" style={{ width: `${completionPercent}%` }} />
+            </div>
+
+            <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+                {resumeData.language === 'en' ? 'Open checklist' : 'လိုအပ်နေသော အချက်များ'}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {missingSignals.length > 0 ? (
+                  missingSignals.map((item) => (
+                    <span key={item} className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+                      {item}
+                    </span>
+                  ))
+                ) : (
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    {resumeData.language === 'en' ? 'Core sections are covered' : 'အဓိကအပိုင်းများ ပြည့်စုံပါသည်'}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className={`wizard-col lg:col-span-5 ${isPreviewMode ? 'hidden lg:block' : 'block'} no-print`}>
+            <div className="space-y-6">
+              <div className="rounded-[32px] border border-slate-200 bg-white/90 p-5 shadow-[0_25px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+                <Steps />
+              </div>
+
+              <div className="overflow-hidden rounded-[34px] border border-slate-200 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.08)]">
+                <div className="border-b border-slate-100 px-6 py-6">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">
+                        {resumeData.language === 'en' ? 'Editor workspace' : 'Editor workspace'}
+                      </div>
+                      <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{currentStepMeta.label}</h3>
+                      <p className="mt-2 text-sm text-slate-500">{currentStepMeta.caption}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {step === WizardStep.PERSONAL && (
+                        <Button onClick={() => setShowImportModal(true)} variant="ai" icon={<Import size={16} />}>
+                          {t.importResume}
+                        </Button>
+                      )}
+                      <Button onClick={handleManualSave} variant="outline" icon={<Save size={16} />}>
+                        {loadingAI === 'save' ? 'Saving...' : 'Save Draft'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 md:p-8">
+                  {renderStepContent()}
+
+                  <div className="mt-8 flex justify-between border-t border-slate-100 pt-6">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setStep(prev => Math.max(0, prev - 1))}
+                      disabled={step === 0}
+                      icon={<ChevronLeft size={16} />}
+                    >
+                      {t.back}
+                    </Button>
+
+                    {step < WizardStep.FINALIZE && (
+                      <Button onClick={() => setStep(prev => Math.min(WizardStep.FINALIZE, prev + 1))}>
+                        {t.next} <ChevronRight size={16} className="ml-2" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`lg:col-span-7 relative overflow-hidden rounded-[34px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.18),transparent_32%),linear-gradient(180deg,#eff6ff_0%,#e2e8f0_100%)] shadow-[0_32px_80px_rgba(15,23,42,0.12)] ${isPreviewMode ? 'fixed inset-0 z-50 m-4 flex bg-slate-950' : 'hidden lg:flex'}`}>
+            <div className="absolute right-4 top-4 z-40 flex items-center gap-2 rounded-full border border-white/70 bg-white/90 p-2 shadow-xl backdrop-blur-md no-print">
+              <span className="px-2 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Zoom</span>
+              <input
+                type="range"
+                min="0.3"
+                max="1.5"
+                step="0.05"
+                value={zoom}
                 onChange={(e) => setZoom(parseFloat(e.target.value))}
-                className="w-24 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600 outline-none"
+                className="h-1.5 w-24 cursor-pointer appearance-none rounded-lg bg-slate-300 accent-blue-600 outline-none"
               />
-              <span className="text-xs font-mono font-bold text-blue-600 w-10 text-center">{Math.round(zoom * 100)}%</span>
-              
+              <span className="w-10 text-center text-xs font-black text-blue-600">{Math.round(zoom * 100)}%</span>
+
               {isPreviewMode && (
-                 <button 
+                <button
                   onClick={() => setIsPreviewMode(false)}
-                  className="bg-gray-100 text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-colors ml-2"
-                 >
-                   <X size={16} />
-                 </button>
+                  className="ml-1 rounded-full bg-slate-100 p-1.5 text-slate-600 transition-colors hover:bg-slate-200"
+                >
+                  <X size={16} />
+                </button>
               )}
             </div>
-            
-            <div className={`w-full h-full overflow-auto p-4 sm:p-8 flex flex-col items-center justify-start print:p-0 print:overflow-visible`}>
-              {/* Theme Editor - Desktop Only - Floating above preview */}
-              <div className="w-full max-w-[210mm] mb-6 no-print">
-                 <ThemeEditor theme={resumeData.theme} onChange={updateTheme} language={resumeData.language} />
+
+            <div className="flex h-full w-full flex-col items-center justify-start overflow-auto p-4 sm:p-8 print:overflow-visible print:p-0">
+              <div className="mb-6 w-full max-w-[210mm] no-print">
+                <ThemeEditor theme={resumeData.theme} onChange={updateTheme} language={resumeData.language} />
               </div>
-              <div className="print:shadow-none transition-all duration-300 transform-gpu origin-top">
-                 <Preview data={debouncedResumeData} scale={zoom} />
+              <div className="origin-top transform-gpu transition-all duration-300 print:shadow-none">
+                <Preview data={debouncedResumeData} scale={zoom} />
               </div>
             </div>
           </div>
-
         </div>
       </main>
       {/* Saved Resumes Modal */}

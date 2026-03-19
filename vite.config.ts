@@ -6,6 +6,19 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       base: '/cvwizard/',
+      build: {
+        chunkSizeWarningLimit: 700,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              react: ['react', 'react-dom'],
+              firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+              ai: ['@google/genai'],
+              icons: ['lucide-react'],
+            },
+          },
+        },
+      },
       server: {
         port: 3000,
         host: '0.0.0.0',

@@ -56,7 +56,7 @@ export type TemplateId = 'modern' | 'classic' | 'sidebar' | 'creative';
 export interface Theme {
   color: string; 
   backgroundColor: string;
-  font: 'Inter' | 'Merriweather' | 'Roboto' | 'Lato' | 'Open Sans';
+  font: string;
   templateId: TemplateId;
   showProfile: boolean;
   profileShape: 'circle' | 'square' | 'rounded';
