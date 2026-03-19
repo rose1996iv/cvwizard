@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Download, Plus, Minus, Check, Globe, Layout, Type as TypeIcon, Save, Printer, Trash2, PlusCircle, UserCircle, LogOut, LayoutTemplate, Briefcase, FileText, Wand2, ArrowLeft, ArrowRight, Grid, X, ChevronRight, ChevronLeft, MoveUp, MoveDown, Book, User, Settings, Folder, Image, GraduationCap, Wrench, Edit3, Import, Upload, Sparkles, Eye, Layers } from 'lucide-react';
+import { useAuth } from './services/auth';
 import { 
-  User, Briefcase, GraduationCap, Wrench, Download, 
-  Sparkles, Trash2, Plus, ChevronLeft, ChevronRight, Eye, Printer, Edit3, Layers, Upload, X, Import, FileText
-} from 'lucide-react';
+  saveResumeToCloud, 
+  getResumesByUser, 
+  SavedResume, 
+  deleteResumeFromCloud 
+} from './services/resumeStorage';
 import { ResumeData, WizardStep, Experience, Education, Skill, CustomSection, CustomItem, Theme } from './types';
 import { Preview } from './components/Preview';
 import { Button } from './components/Button';
@@ -27,6 +31,12 @@ const App = () => {
   
   // Ref for auto-scrolling to new items
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { user, loginWithGoogle, logout } = useAuth();
+  const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
+  const [showResumesModal, setShowResumesModal] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const [resumeData, setResumeData] = useState<ResumeData>(() => {
     const saved = localStorage.getItem('cvwizard-data');
@@ -76,9 +86,67 @@ const App = () => {
   const debouncedResumeData = useDebounce(resumeData, 500);
 
   // Save to localStorage
+  // Auto-save across LocalStorage
   useEffect(() => {
     localStorage.setItem('cvwizard-data', JSON.stringify(resumeData));
   }, [resumeData]);
+
+  // Cloud Sync
+  useEffect(() => {
+    if (user) {
+        const timeout = setTimeout(() => {
+            saveResumeToCloud(user.uid, resumeData, activeResumeId || undefined)
+                .then(id => {
+                    if (id && !activeResumeId) setActiveResumeId(id);
+                    setLastSaved(new Date());
+                    loadUserResumes();
+                });
+        }, 2000); // Debounce saves
+        return () => clearTimeout(timeout);
+    }
+  }, [resumeData, user, activeResumeId]);
+
+  const loadUserResumes = async () => {
+    if (user) {
+        const resumes = await getResumesByUser(user.uid);
+        setSavedResumes(resumes);
+    }
+  };
+
+  useEffect(() => {
+    loadUserResumes();
+  }, [user]);
+
+  const handleSelectResume = (resumeId: string) => {
+    const selected = savedResumes.find(r => r.id === resumeId);
+    if (selected) {
+        setResumeData(selected.data);
+        setActiveResumeId(selected.id);
+        setShowResumesModal(false);
+    }
+  };
+
+  const createNewResume = () => {
+    setActiveResumeId(null);
+    setResumeData(prev => ({
+        ...prev,
+        personalInfo: { ...prev.personalInfo, fullName: '', summary: '' },
+        experience: [],
+        education: [],
+        skills: [],
+        customSections: []
+    }));
+    setShowResumesModal(false);
+  };
+
+  const handleDeleteResume = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm("Are you sure you want to delete this resume?")) {
+        await deleteResumeFromCloud(id);
+        if (activeResumeId === id) setActiveResumeId(null);
+        loadUserResumes();
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -1004,6 +1072,52 @@ const App = () => {
                  </button>
                </div>
 
+               {/* Cloud Saving Indicator */}
+                {user && lastSaved && (
+                   <div className="hidden md:flex items-center text-[10px] text-green-600 font-medium">
+                     <Check size={12} className="mr-1" /> Cloud Saved
+                   </div>
+                )}
+
+                {/* Resumes Library */}
+                {user && (
+                  <button 
+                    onClick={() => setShowResumesModal(true)}
+                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg flex items-center gap-1 text-sm font-medium"
+                    title="My Documents"
+                  >
+                    <Folder size={18} />
+                    <span className="hidden sm:inline">My Documents</span>
+                  </button>
+                )}
+
+                {/* User Auth */}
+                {!user ? (
+                   <Button 
+                    onClick={loginWithGoogle} 
+                    variant="outline" 
+                    size="sm" 
+                    icon={<UserCircle size={18} />}
+                   >
+                     Login
+                   </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={user.photoURL || ''} 
+                      alt="User" 
+                      className="w-8 h-8 rounded-full border border-gray-200"
+                    />
+                    <button 
+                      onClick={logout}
+                      className="p-2 text-gray-500 hover:text-red-600 transition-colors"
+                      title="Logout"
+                    >
+                      <LogOut size={18} />
+                    </button>
+                  </div>
+                )}
+                
                <button 
                 onClick={() => setIsPreviewMode(!isPreviewMode)}
                 className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -1094,6 +1208,76 @@ const App = () => {
 
         </div>
       </main>
+      {/* Saved Resumes Modal */}
+      {showResumesModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Folder className="text-blue-600" />
+                  My Resumes
+                </h2>
+                <button onClick={() => setShowResumesModal(false)} className="p-2 hover:bg-gray-100 rounded-full">
+                  <X />
+                </button>
+             </div>
+             
+             <div className="p-6 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   {/* Create New Card */}
+                   <button 
+                    onClick={createNewResume}
+                    className="p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-3 group"
+                   >
+                     <PlusCircle size={32} className="text-gray-400 group-hover:text-blue-500" />
+                     <span className="font-medium text-gray-600">Create New CV</span>
+                   </button>
+
+                   {/* Saved Resumes List */}
+                   {savedResumes.map(resume => (
+                     <div 
+                      key={resume.id}
+                      onClick={() => handleSelectResume(resume.id)}
+                      className={`p-4 border rounded-xl cursor-pointer transition-all hover:shadow-md relative group ${activeResumeId === resume.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                     >
+                       <div className="flex justify-between items-start mb-2">
+                         <div className="bg-gray-100 p-2 rounded-lg text-gray-400">
+                           <FileText size={20} />
+                         </div>
+                         <button 
+                          onClick={(e) => handleDeleteResume(resume.id, e)}
+                          className="p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                         >
+                           <Trash2 size={16} />
+                         </button>
+                       </div>
+                       <h3 className="font-bold text-gray-900 truncate pr-4">{resume.name}</h3>
+                       <p className="text-[10px] text-gray-500 mt-1">
+                         Updated: {resume.updatedAt?.toDate().toLocaleDateString()}
+                       </p>
+                       {activeResumeId === resume.id && (
+                         <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] text-blue-600 font-bold">
+                           <Check size={12} /> Active
+                         </div>
+                       )}
+                     </div>
+                   ))}
+                </div>
+
+                {savedResumes.length === 0 && (
+                   <div className="text-center py-12">
+                      <Layout size={48} className="mx-auto text-gray-200 mb-4" />
+                      <p className="text-gray-500 italic">No saved resumes found in your cloud account.</p>
+                   </div>
+                )}
+             </div>
+
+             <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end text-xs text-gray-400">
+                Logged in as: {user?.email}
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
