@@ -9,49 +9,79 @@ import { Button } from './components/Button';
 import { InputGroup } from './components/InputGroup';
 import { ThemeEditor } from './components/ThemeEditor';
 import { ImportModal } from './components/ImportModal';
-import { generateSummary, enhanceExperienceDescription, suggestSkills, parseResumeContent } from './services/geminiService';
+import { generateSummary, enhanceExperienceDescription, suggestSkills, parseResumeContent, generateCoverLetter, checkGrammar } from './services/geminiService';
 import { useDebounce } from './hooks/useDebounce';
+
+import { translations } from './translations';
 
 declare const html2pdf: any;
 
 const App = () => {
   const [step, setStep] = useState<WizardStep>(WizardStep.PERSONAL);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [zoom, setZoom] = useState(0.8);
   const [loadingAI, setLoadingAI] = useState<string | null>(null);
+  const [coverLetter, setCoverLetter] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
   // Ref for auto-scrolling to new items
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const [resumeData, setResumeData] = useState<ResumeData>({
-    personalInfo: {
-      fullName: '',
-      email: '',
-      phone: '',
-      location: '',
-      linkedin: '',
-      website: '',
-      summary: '',
-      jobTitle: '',
-      profileImage: null,
-    },
-    experience: [],
-    education: [],
-    skills: [],
-    customSections: [],
-    theme: {
-      color: '#2563eb',
-      backgroundColor: '#ffffff',
-      font: 'Inter'
+  const [resumeData, setResumeData] = useState<ResumeData>(() => {
+    const saved = localStorage.getItem('cvwizard-data');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Ensure new fields exist for existing users
+        if (!parsed.docType) parsed.docType = 'cv';
+        if (parsed.personalInfo && !parsed.personalInfo.summaryType) parsed.personalInfo.summaryType = 'summary';
+        return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved data', e);
+      }
     }
+    return {
+      personalInfo: {
+        fullName: '',
+        email: '',
+        phone: '',
+        location: '',
+        linkedin: '',
+        website: '',
+        summary: '',
+        summaryType: 'summary',
+        jobTitle: '',
+        profileImage: null,
+      },
+      docType: 'cv',
+      experience: [],
+      education: [],
+      skills: [],
+      customSections: [],
+      theme: {
+        color: '#2563eb',
+        backgroundColor: '#ffffff',
+        font: 'Inter',
+        templateId: 'modern'
+      },
+      sectionOrder: ['summary', 'experience', 'education', 'skills', 'custom'],
+      language: 'en'
+    };
   });
 
-  const debouncedResumeData = useDebounce(resumeData, 300);
+  const debouncedResumeData = useDebounce(resumeData, 500);
+
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem('cvwizard-data', JSON.stringify(resumeData));
+  }, [resumeData]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [step]);
+
+  const t = translations[resumeData.language || 'en'];
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -144,7 +174,7 @@ const App = () => {
   // --- Skill Handlers ---
   const addSkill = (name: string) => {
     if (!name.trim()) return;
-    const newSkill: Skill = { id: crypto.randomUUID(), name, level: 'Intermediate' };
+    const newSkill: Skill = { id: crypto.randomUUID(), name, level: 3 };
     setResumeData(prev => ({ ...prev, skills: [...prev.skills, newSkill] }));
   };
 
@@ -238,7 +268,7 @@ const App = () => {
     const currentSkillNames = new Set(resumeData.skills.map(s => s.name.toLowerCase()));
     const newSkills = suggested
       .filter(s => !currentSkillNames.has(s.toLowerCase()))
-      .map(s => ({ id: crypto.randomUUID(), name: s, level: 'Intermediate' } as Skill));
+      .map(s => ({ id: crypto.randomUUID(), name: s, level: 3 } as Skill));
     
     setResumeData(prev => ({ ...prev, skills: [...prev.skills, ...newSkills] }));
     setLoadingAI(null);
@@ -294,6 +324,21 @@ const App = () => {
     } finally {
         setLoadingAI(null);
     }
+  };
+
+  const handleGenerateCoverLetter = async () => {
+    setLoadingAI('cover-letter');
+    const letter = await generateCoverLetter(resumeData);
+    setCoverLetter(letter);
+    setLoadingAI(null);
+  };
+
+  const moveSection = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...resumeData.sectionOrder];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= newOrder.length) return;
+    [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
+    setResumeData(prev => ({ ...prev, sectionOrder: newOrder }));
   };
 
   const handlePrint = () => {
@@ -373,12 +418,13 @@ const App = () => {
   const Steps = () => (
     <div className="flex space-x-2 mb-8 overflow-x-auto pb-2 no-print scrollbar-hide">
       {[
-        { id: WizardStep.PERSONAL, icon: User, label: 'Personal' },
-        { id: WizardStep.EXPERIENCE, icon: Briefcase, label: 'Experience' },
-        { id: WizardStep.EDUCATION, icon: GraduationCap, label: 'Education' },
-        { id: WizardStep.SKILLS, icon: Wrench, label: 'Skills' },
-        { id: WizardStep.CUSTOM, icon: Layers, label: 'Custom' },
-        { id: WizardStep.FINALIZE, icon: Download, label: 'Finalize' },
+        { id: WizardStep.PERSONAL, icon: User, label: t.personal },
+        { id: WizardStep.EXPERIENCE, icon: Briefcase, label: t.experience },
+        { id: WizardStep.EDUCATION, icon: GraduationCap, label: t.education },
+        { id: WizardStep.SKILLS, icon: Wrench, label: t.skills },
+        { id: WizardStep.CUSTOM, icon: Layers, label: t.custom },
+        { id: WizardStep.THEME, icon: Edit3, label: t.theme },
+        { id: WizardStep.FINALIZE, icon: Download, label: t.finalize },
       ].map((s) => (
         <button
           key={s.id}
@@ -403,16 +449,45 @@ const App = () => {
           <div className="space-y-6 animate-fadeIn">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
                 <div>
-                   <h2 className="text-2xl font-bold text-gray-800">Let's start with the basics</h2>
-                   <p className="text-gray-500 text-sm mt-1">Fill in your details or import from an existing resume.</p>
+                   <h2 className="text-2xl font-bold text-gray-800">{t.basics}</h2>
+                   <p className="text-gray-500 text-sm mt-1">{resumeData.language === 'en' ? 'Fill in your details or import from an existing resume.' : 'အချက်အလက်များကို ဖြည့်စွက်ပါ (သို့မဟုတ်) ရှိပြီးသား CV မှ အချက်အလက်ယူပါ။'}</p>
                 </div>
-                <Button 
-                   onClick={() => setShowImportModal(true)} 
-                   variant="ai" 
-                   icon={<Import size={16} />}
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => setShowImportModal(true)} 
+                    variant="ai" 
+                    icon={<Import size={16} />}
+                  >
+                      {t.importResume}
+                  </Button>
+                </div>
+            </div>
+
+            {/* Document Type Selector */}
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-600 text-white rounded-lg">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-blue-900">{t.docType}</h3>
+                  <p className="text-[10px] text-blue-600 uppercase tracking-wider font-bold">{resumeData.docType === 'cv' ? t.cv : t.resume}</p>
+                </div>
+              </div>
+              <div className="flex bg-white p-1 rounded-lg shadow-sm border border-blue-100">
+                <button 
+                  onClick={() => setResumeData(prev => ({ ...prev, docType: 'cv' }))}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${resumeData.docType === 'cv' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
-                    Import Resume / LinkedIn
-                </Button>
+                  CV
+                </button>
+                <button 
+                  onClick={() => setResumeData(prev => ({ ...prev, docType: 'resume' }))}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-md transition-all ${resumeData.docType === 'resume' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
+                >
+                  Resume
+                </button>
+              </div>
             </div>
             
             {/* Profile Image Upload */}
@@ -453,32 +528,62 @@ const App = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InputGroup label="Full Name" value={resumeData.personalInfo.fullName} onChange={(v) => updatePersonalInfo('fullName', v)} placeholder="Joe" />
-              <InputGroup label="Target Job Title" value={resumeData.personalInfo.jobTitle} onChange={(v) => updatePersonalInfo('jobTitle', v)} placeholder="Software Engineer" />
-              <InputGroup label="Email" type="email" value={resumeData.personalInfo.email} onChange={(v) => updatePersonalInfo('email', v)} placeholder="joe@example.com" />
-              <InputGroup label="Phone" value={resumeData.personalInfo.phone} onChange={(v) => updatePersonalInfo('phone', v)} placeholder="+1 555 123 4567" />
-              <InputGroup label="Location" value={resumeData.personalInfo.location} onChange={(v) => updatePersonalInfo('location', v)} placeholder="Grace Leo Home, GG" />
-              <InputGroup label="LinkedIn URL" value={resumeData.personalInfo.linkedin} onChange={(v) => updatePersonalInfo('linkedin', v)} placeholder="linkedin.com/in/joe" />
-              <InputGroup label="Portfolio Website" value={resumeData.personalInfo.website} onChange={(v) => updatePersonalInfo('website', v)} placeholder="joeportfolio.com" />
+              <InputGroup label={t.fullName} value={resumeData.personalInfo.fullName} onChange={(v) => updatePersonalInfo('fullName', v)} placeholder="Joe" />
+              <InputGroup label={t.targetJobTitle} value={resumeData.personalInfo.jobTitle} onChange={(v) => updatePersonalInfo('jobTitle', v)} placeholder="Software Engineer" />
+              <InputGroup label={t.email} type="email" value={resumeData.personalInfo.email} onChange={(v) => updatePersonalInfo('email', v)} placeholder="joe@example.com" />
+              <InputGroup label={t.phone} value={resumeData.personalInfo.phone} onChange={(v) => updatePersonalInfo('phone', v)} placeholder="+1 555 123 4567" />
+              <InputGroup label={t.location} value={resumeData.personalInfo.location} onChange={(v) => updatePersonalInfo('location', v)} placeholder="Grace Leo Home, GG" />
+              <InputGroup label={t.linkedin} value={resumeData.personalInfo.linkedin} onChange={(v) => updatePersonalInfo('linkedin', v)} placeholder="linkedin.com/in/joe" />
+              <InputGroup label={t.website} value={resumeData.personalInfo.website} onChange={(v) => updatePersonalInfo('website', v)} placeholder="joeportfolio.com" />
             </div>
             
             <div className="relative">
               <div className="flex justify-between items-end mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Professional Summary</label>
-                <button 
-                  onClick={handleGenerateSummary}
-                  disabled={loadingAI === 'summary' || !resumeData.personalInfo.jobTitle}
-                  className="flex items-center text-xs font-medium text-purple-600 hover:text-purple-700 disabled:opacity-50 transition-colors"
-                >
-                  <Sparkles size={14} className="mr-1" />
-                  {loadingAI === 'summary' ? 'Generating...' : 'Auto-Generate with AI'}
-                </button>
+                <div className="flex bg-gray-100 p-1 rounded-lg mb-1">
+                  <button 
+                    onClick={() => updatePersonalInfo('summaryType', 'summary')}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${resumeData.personalInfo.summaryType === 'summary' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+                  >
+                    {t.summary}
+                  </button>
+                  <button 
+                    onClick={() => updatePersonalInfo('summaryType', 'objective')}
+                    className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${resumeData.personalInfo.summaryType === 'objective' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+                  >
+                    {t.objective}
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                   <button 
+                    onClick={async () => {
+                      setLoadingAI('grammar-summary');
+                      const improved = await checkGrammar(resumeData.personalInfo.summary);
+                      updatePersonalInfo('summary', improved);
+                      setLoadingAI(null);
+                    }}
+                    disabled={loadingAI === 'grammar-summary' || !resumeData.personalInfo.summary}
+                    className="flex items-center text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Sparkles size={14} className="mr-1" />
+                    {loadingAI === 'grammar-summary' ? t.checking : t.checkGrammar}
+                  </button>
+                  <button 
+                    onClick={handleGenerateSummary}
+                    disabled={loadingAI === 'summary' || !resumeData.personalInfo.jobTitle}
+                    className="flex items-center text-xs font-medium text-purple-600 hover:text-purple-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Sparkles size={14} className="mr-1" />
+                    {loadingAI === 'summary' ? t.generating : t.autoGenAI}
+                  </button>
+                </div>
               </div>
               <textarea
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-shadow min-h-[150px]"
                 value={resumeData.personalInfo.summary}
                 onChange={e => updatePersonalInfo('summary', e.target.value)}
-                placeholder="Briefly describe your professional background and goals..."
+                placeholder={resumeData.personalInfo.summaryType === 'summary' 
+                  ? (resumeData.language === 'en' ? 'Briefly describe your professional background...' : 'သင်၏ ပရော်ဖက်ရှင်နယ် နောက်ခံကို အကျဉ်းချုံး ဖော်ပြပါ...')
+                  : (resumeData.language === 'en' ? 'State your career goals and what you aim to achieve...' : 'သင်၏ အသက်မွေးဝမ်းကျောင်း ရည်မှန်းချက်များကို ဖော်ပြပါ...')}
               />
             </div>
           </div>
@@ -488,8 +593,8 @@ const App = () => {
         return (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">Work Experience</h2>
-              <Button onClick={addExperience} variant="outline" icon={<Plus size={16} />}>Add Position</Button>
+              <h2 className="text-2xl font-bold text-gray-800">{t.experience}</h2>
+              <Button onClick={addExperience} variant="outline" icon={<Plus size={16} />}>{t.addPosition}</Button>
             </div>
 
             {resumeData.experience.length === 0 && (
@@ -529,14 +634,29 @@ const App = () => {
                 <div className="relative">
                   <div className="flex justify-between items-end mb-1">
                     <label className="block text-sm font-semibold text-gray-700">Description</label>
-                    <button 
-                      onClick={() => handleEnhanceExperience(exp.id)}
-                      disabled={loadingAI === `exp-${exp.id}` || !exp.description}
-                      className="flex items-center text-xs font-medium text-purple-600 hover:text-purple-700 disabled:opacity-50 transition-colors"
-                    >
-                      <Sparkles size={14} className="mr-1" />
-                      {loadingAI === `exp-${exp.id}` ? 'Enhancing...' : 'Enhance with AI'}
-                    </button>
+                    <div className="flex gap-3">
+                       <button 
+                        onClick={async () => {
+                          setLoadingAI(`grammar-${exp.id}`);
+                          const improved = await checkGrammar(exp.description);
+                          updateExperience(exp.id, 'description', improved);
+                          setLoadingAI(null);
+                        }}
+                        disabled={loadingAI === `grammar-${exp.id}` || !exp.description}
+                        className="flex items-center text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors"
+                      >
+                        <Sparkles size={14} className="mr-1" />
+                        {loadingAI === `grammar-${exp.id}` ? 'Checking...' : (resumeData.language === 'en' ? 'Check Grammar' : 'သဒ္ဒါစစ်ရန်')}
+                      </button>
+                      <button 
+                        onClick={() => handleEnhanceExperience(exp.id)}
+                        disabled={loadingAI === `exp-${exp.id}` || !exp.description}
+                        className="flex items-center text-xs font-medium text-purple-600 hover:text-purple-700 disabled:opacity-50 transition-colors"
+                      >
+                        <Sparkles size={14} className="mr-1" />
+                        {loadingAI === `exp-${exp.id}` ? 'Enhancing...' : 'Enhance with AI'}
+                      </button>
+                    </div>
                   </div>
                   <textarea
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[120px]"
@@ -551,7 +671,6 @@ const App = () => {
           </div>
         );
 
-      // ... (Education, Skills, Custom Sections same as before) ...
       case WizardStep.EDUCATION:
         return (
           <div className="space-y-6 animate-fadeIn">
@@ -619,15 +738,33 @@ const App = () => {
               }} variant="secondary">Add</Button>
             </div>
 
-            <div className="flex flex-wrap gap-2 min-h-[100px] p-4 bg-gray-50 rounded-lg border border-gray-200">
-              {resumeData.skills.length === 0 && <span className="text-gray-400 italic">No skills added yet.</span>}
+            <div className="flex flex-col gap-4 min-h-[100px] p-4 bg-gray-50 rounded-lg border border-gray-200">
+              {resumeData.skills.length === 0 && <span className="text-gray-400 italic">{resumeData.language === 'en' ? 'No skills added yet.' : 'ကျွမ်းကျင်မှုများ မထည့်ရသေးပါ။'}</span>}
               {resumeData.skills.map(skill => (
-                <span key={skill.id} className="inline-flex items-center px-3 py-1 bg-white text-gray-800 rounded-full border border-gray-300 shadow-sm">
-                  {skill.name}
-                  <button onClick={() => removeSkill(skill.id)} className="ml-2 text-gray-400 hover:text-red-500 transition-colors">
-                    <times className="font-bold">×</times>
-                  </button>
-                </span>
+                <div key={skill.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                  <span className="font-medium text-gray-800">{skill.name}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((level) => (
+                        <button
+                          key={level}
+                          onClick={() => {
+                            setResumeData(prev => ({
+                              ...prev,
+                              skills: prev.skills.map(s => s.id === skill.id ? { ...s, level: level as any } : s)
+                            }));
+                          }}
+                          className={`w-6 h-6 rounded-full border transition-all ${
+                            skill.level >= level ? 'bg-blue-600 border-blue-600' : 'bg-gray-100 border-gray-200 hover:border-blue-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <button onClick={() => removeSkill(skill.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -689,6 +826,18 @@ const App = () => {
           </div>
         );
 
+      case WizardStep.THEME:
+        return (
+          <div className="space-y-6 animate-fadeIn">
+            <h2 className="text-2xl font-bold text-gray-800">{t.theme}</h2>
+            <ThemeEditor 
+              theme={resumeData.theme} 
+              onChange={updateTheme} 
+              language={resumeData.language}
+            />
+          </div>
+        );
+
       case WizardStep.FINALIZE:
         return (
           <div className="text-center space-y-8 py-10 animate-fadeIn">
@@ -696,10 +845,45 @@ const App = () => {
               <Download size={40} />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Resume is Ready!</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">{t.ready}</h2>
               <p className="text-gray-600 max-w-md mx-auto">
-                Review your document in the preview panel. You can download it as a PDF or export as text for ATS checking.
+                {resumeData.language === 'en' ? 'Review your document in the preview panel. You can download it as a PDF or export as text for ATS checking.' : 'သင့်၏ CV ကို Preview မှာ စစ်ဆေးကြည့်နိုင်ပါသည်။ PDF အဖြစ် ဒေါင်းလုဒ်လုပ်နိုင်သလို စာသားသီးသန့်လည်း ထုတ်ယူနိုင်ပါသည်။'}
               </p>
+            </div>
+            
+            {/* Section Reordering */}
+            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 max-w-xl mx-auto shadow-sm">
+                <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest mb-4 flex items-center justify-center">
+                  <Layers size={16} className="mr-2 text-blue-600" /> {resumeData.language === 'en' ? 'Reorder Sections' : 'အပိုင်းများကို အစီအစဉ် ပြန်စီရန်'}
+                </h3>
+                <div className="space-y-2">
+                  {resumeData.sectionOrder.map((sectionId, index) => (
+                    <div key={sectionId} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-200 shadow-sm transition-all hover:border-blue-300">
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                          {index + 1}
+                        </div>
+                        <span className="text-sm font-semibold capitalize text-gray-700">{sectionId}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <button 
+                          onClick={() => moveSection(index, 'up')}
+                          disabled={index === 0}
+                          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600 disabled:opacity-20 transition-colors"
+                        >
+                          <ChevronLeft className="rotate-90" size={18} />
+                        </button>
+                        <button 
+                          onClick={() => moveSection(index, 'down')}
+                          disabled={index === resumeData.sectionOrder.length - 1}
+                          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-blue-600 disabled:opacity-20 transition-colors"
+                        >
+                          <ChevronLeft className="-rotate-90" size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
             </div>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-2xl mx-auto">
@@ -709,10 +893,8 @@ const App = () => {
                 variant="primary" 
                 className="px-8 py-4 text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all flex items-center justify-center"
               >
-                {isExporting ? (
-                  <>Downloading...</>
-                ) : (
-                  <><Download className="mr-2" size={24} /> Download PDF</>
+                {isExporting ? (resumeData.language === 'en' ? 'Downloading...' : 'ဒေါင်းလုဒ်လုပ်နေသည်...') : (
+                  <><Download className="mr-2" size={24} /> {t.downloadPDF}</>
                 )}
               </Button>
               
@@ -721,14 +903,47 @@ const App = () => {
                 variant="outline" 
                 className="px-8 py-4 text-lg border-2 hover:bg-gray-50 flex items-center justify-center"
               >
-                <Printer className="mr-2" size={24} /> Print / Save as PDF
+                <Printer className="mr-2" size={24} /> {t.printSave}
               </Button>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-4 space-y-4">
                <button onClick={handleExportTXT} className="text-sm text-gray-500 hover:text-gray-800 underline flex items-center mx-auto">
-                 <FileText size={14} className="mr-1" /> Export as Plain Text (for ATS)
+                 <FileText size={14} className="mr-1" /> {t.exportATS}
                </button>
+               
+               <div className="border-t border-gray-200 pt-8 mt-8">
+                  <h3 className="text-xl font-bold mb-4">{resumeData.language === 'en' ? 'Bonus: AI Cover Letter' : 'အပိုဆောင်း- AI ဖြင့် Cover Letter ရေးရန်'}</h3>
+                  {!coverLetter ? (
+                    <Button onClick={handleGenerateCoverLetter} variant="ai" isLoading={loadingAI === 'cover-letter'}>
+                      {resumeData.language === 'en' ? 'Generate Cover Letter' : 'Cover Letter ထုတ်ယူရန်'}
+                    </Button>
+                  ) : (
+                    <div className="bg-white p-6 rounded-xl border border-gray-200 text-left relative group">
+                      <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 leading-relaxed overflow-hidden max-h-[400px]">
+                        {coverLetter}
+                      </pre>
+                      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white to-transparent"></div>
+                      <div className="flex justify-center gap-2 mt-4 relative z-10">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            const blob = new Blob([coverLetter], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'CoverLetter.txt';
+                            a.click();
+                          }}
+                        >
+                          Download TXT
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setCoverLetter(null)}>Clear</Button>
+                      </div>
+                    </div>
+                  )}
+               </div>
             </div>
           </div>
         );
@@ -758,6 +973,22 @@ const App = () => {
               <span className="text-xl font-bold text-gray-900">ResumeAI</span>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
+               {/* Language Toggle */}
+               <div className="flex bg-gray-100 p-1 rounded-lg mr-2 no-print">
+                 <button 
+                  onClick={() => setResumeData(prev => ({ ...prev, language: 'en' }))}
+                  className={`px-2 py-1 text-xs font-bold rounded ${resumeData.language === 'en' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+                 >
+                   EN
+                 </button>
+                 <button 
+                  onClick={() => setResumeData(prev => ({ ...prev, language: 'mm' }))}
+                  className={`px-2 py-1 text-xs font-bold rounded ${resumeData.language === 'mm' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500'}`}
+                 >
+                   MM
+                 </button>
+               </div>
+
                <button 
                 onClick={() => setIsPreviewMode(!isPreviewMode)}
                 className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -811,27 +1042,39 @@ const App = () => {
           </div>
 
           {/* Preview Column */}
-          <div className={`lg:col-span-7 flex flex-col items-center print-layout print:!flex print:!static print:!inset-auto print:!z-auto print:!bg-transparent print:!p-0 print:!overflow-visible ${isPreviewMode ? 'flex fixed inset-0 z-50 bg-gray-900 p-4 overflow-auto' : 'hidden lg:flex'}`}>
-             {isPreviewMode && (
-               <button 
-                onClick={() => setIsPreviewMode(false)}
-                className="absolute top-4 right-4 bg-white/10 text-white p-2 rounded-full hover:bg-white/20 no-print"
-               >
-                 <X className="text-xl" />
-               </button>
-             )}
-             
-             <div className="w-full h-full flex flex-col items-center justify-start overflow-y-auto py-4 print:p-0 print:overflow-visible print:block">
-                
-                {/* Theme Editor (Desktop Only - Floating above preview) */}
-                <div className="w-full max-w-[210mm] mb-4 no-print">
-                   <ThemeEditor theme={resumeData.theme} onChange={updateTheme} />
-                </div>
-
-                <div className={`transition-transform duration-300 ${isPreviewMode ? 'scale-100 md:scale-90' : 'scale-[0.65] xl:scale-[0.80] origin-top'} print:transform-none print:w-full`}>
-                   <Preview data={debouncedResumeData} />
-                </div>
-             </div>
+          <div className={`lg:col-span-7 flex flex-col items-center bg-gray-200 rounded-2xl overflow-hidden relative ${isPreviewMode ? 'flex fixed inset-0 z-50 p-4 bg-gray-900 overflow-auto' : 'hidden lg:flex'}`}>
+            <div className="absolute top-4 right-4 z-40 flex items-center gap-2 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-xl no-print">
+              <span className="text-[10px] font-bold text-gray-400 px-2 uppercase tracking-widest">Zoom</span>
+              <input 
+                type="range" 
+                min="0.3" 
+                max="1.5" 
+                step="0.05" 
+                value={zoom} 
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                className="w-24 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600 outline-none"
+              />
+              <span className="text-xs font-mono font-bold text-blue-600 w-10 text-center">{Math.round(zoom * 100)}%</span>
+              
+              {isPreviewMode && (
+                 <button 
+                  onClick={() => setIsPreviewMode(false)}
+                  className="bg-gray-100 text-gray-600 p-1.5 rounded-full hover:bg-gray-200 transition-colors ml-2"
+                 >
+                   <X size={16} />
+                 </button>
+              )}
+            </div>
+            
+            <div className={`w-full h-full overflow-auto p-4 sm:p-8 flex flex-col items-center justify-start print:p-0 print:overflow-visible`}>
+              {/* Theme Editor - Desktop Only - Floating above preview */}
+              <div className="w-full max-w-[210mm] mb-6 no-print">
+                 <ThemeEditor theme={resumeData.theme} onChange={updateTheme} language={resumeData.language} />
+              </div>
+              <div className="print:shadow-none transition-all duration-300 transform-gpu origin-top">
+                 <Preview data={debouncedResumeData} scale={zoom} />
+              </div>
+            </div>
           </div>
 
         </div>

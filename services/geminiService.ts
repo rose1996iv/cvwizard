@@ -26,7 +26,7 @@ const getAiClient = (): GoogleGenAI | null => {
 
 const hasApiKey = (): boolean => resolveApiKey().length > 0;
 
-const modelId = 'gemini-3-flash-preview';
+const modelId = 'gemini-2.0-flash';
 
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -97,7 +97,7 @@ const parseSkillsFromText = (content: string): Skill[] => {
     .map((skill) => skill.trim())
     .filter(Boolean)
     .slice(0, 20)
-    .map((name) => ({ id: crypto.randomUUID(), name, level: "Intermediate" as const }));
+    .map((name) => ({ id: crypto.randomUUID(), name, level: 3 as const }));
 };
 
 const parseResumeTextLocally = (content: string): Partial<ResumeData> => {
@@ -133,8 +133,10 @@ const parseResumeTextLocally = (content: string): Partial<ResumeData> => {
       linkedin: linkedInMatch?.[0] || "",
       website,
       summary,
+      summaryType: 'summary',
       jobTitle: secondLine && !/@/.test(secondLine) ? secondLine : "",
     },
+    docType: 'cv',
     experience: [],
     education: [],
     skills,
@@ -287,7 +289,7 @@ export const parseResumeContent = async (content: string, mimeType: string = 'te
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: modelId,
             contents: contentsPayload,
             config: {
                 responseMimeType: "application/json",
@@ -318,5 +320,62 @@ export const parseResumeContent = async (content: string, mimeType: string = 'te
           return parseResumeTextLocally(content);
         }
         throw error;
+    }
+};
+
+export const generateCoverLetter = async (resumeData: ResumeData): Promise<string> => {
+  if (!hasApiKey()) return "API Key missing.";
+  const ai = getAiClient();
+  if (!ai) return "AI service unavailable.";
+
+  const { personalInfo, experience, skills } = resumeData;
+  const prompt = `
+    Write a professional and persuasive cover letter based on the following resume data.
+    
+    Candidate: ${personalInfo.fullName}
+    Target Position: ${personalInfo.jobTitle}
+    Key Skills: ${skills.map(s => s.name).join(', ')}
+    Experience Summary: ${experience.map(e => `${e.position} at ${e.company}`).join('; ')}
+    
+    Instructions:
+    1. Tone: Professional, enthusiastic, and confident.
+    2. Focus on how the candidate's skills and experience match the target job title.
+    3. Keep it to 3-4 paragraphs.
+    4. Use placeholders like "[Hiring Manager Name]" or "[Company Name]" where appropriate.
+    5. Return ONLY the letter text.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelId,
+      contents: prompt,
+    });
+    return response.text || "Could not generate cover letter.";
+  } catch (error) {
+    console.error("AI Error:", error);
+    return "Error generating cover letter.";
+  }
+};
+
+export const checkGrammar = async (text: string): Promise<string> => {
+    if (!hasApiKey()) return text;
+    const ai = getAiClient();
+    if (!ai) return text;
+
+    const prompt = `
+      Check the following text for grammar, spelling, and professional tone improvements. 
+      Return the improved version only. If it's already perfect, return it as is.
+      
+      Text: "${text}"
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelId,
+            contents: prompt,
+        });
+        return response.text || text;
+    } catch (error) {
+        return text;
     }
 };

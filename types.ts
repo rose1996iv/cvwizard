@@ -21,7 +21,7 @@ export interface Education {
 export interface Skill {
   id: string;
   name: string;
-  level: 'Beginner' | 'Intermediate' | 'Expert';
+  level: 1 | 2 | 3 | 4 | 5; // Numeric level for better UI visualization
 }
 
 export interface PersonalInfo {
@@ -32,14 +32,9 @@ export interface PersonalInfo {
   linkedin: string;
   website: string;
   summary: string;
+  summaryType: 'summary' | 'objective';
   jobTitle: string;
   profileImage?: string | null; // Base64 string
-}
-
-export interface Theme {
-  color: string; // Hex code for text/accents
-  backgroundColor: string; // Hex code for background
-  font: 'Inter' | 'Merriweather' | 'Roboto' | 'Lato' | 'Open Sans';
 }
 
 export interface CustomItem {
@@ -56,13 +51,27 @@ export interface CustomSection {
   items: CustomItem[];
 }
 
+export type TemplateId = 'modern' | 'classic' | 'sidebar' | 'creative';
+
+export interface Theme {
+  color: string; 
+  backgroundColor: string;
+  font: 'Inter' | 'Merriweather' | 'Roboto' | 'Lato' | 'Open Sans';
+  templateId: TemplateId;
+}
+
+export type SectionId = 'summary' | 'experience' | 'education' | 'skills' | 'custom';
+
 export interface ResumeData {
   personalInfo: PersonalInfo;
+  docType: 'cv' | 'resume';
   experience: Experience[];
   education: Education[];
   skills: Skill[];
   customSections: CustomSection[];
   theme: Theme;
+  sectionOrder: SectionId[];
+  language: 'en' | 'mm';
 }
 
 export enum WizardStep {
@@ -71,7 +80,8 @@ export enum WizardStep {
   EDUCATION = 2,
   SKILLS = 3,
   CUSTOM = 4,
-  FINALIZE = 5
+  THEME = 5, // Split Finalize and Theme
+  FINALIZE = 6
 }
 
 export interface AIResponse {

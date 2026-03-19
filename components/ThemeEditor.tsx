@@ -1,11 +1,12 @@
 import React from 'react';
-import { Theme } from '../types';
-import { Palette, Type, LayoutTemplate, RotateCcw, Check } from 'lucide-react';
-import { Button } from './Button';
+import { Theme, TemplateId } from '../types';
+import { Palette, Type, LayoutTemplate, RotateCcw, Check, Grid } from 'lucide-react';
+import { translations } from '../translations';
 
 interface ThemeEditorProps {
   theme: Theme;
   onChange: (field: keyof Theme, value: string) => void;
+  language?: 'en' | 'mm';
 }
 
 const ACCENT_COLORS = [
@@ -36,19 +37,28 @@ const FONTS = [
   'Merriweather'
 ];
 
-export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange }) => {
+const TEMPLATES: { id: TemplateId, label: string }[] = [
+  { id: 'modern', label: 'Modern Sidebar' },
+  { id: 'classic', label: 'Classic Top Header' },
+  { id: 'sidebar', label: 'Left Sidebar' },
+  { id: 'creative', label: 'Creative Gradient' },
+];
+
+export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange, language = 'en' }) => {
+  const t = translations[language];
   
   const handleReset = () => {
     onChange('color', '#2563eb');
     onChange('backgroundColor', '#ffffff');
     onChange('font', 'Inter');
+    onChange('templateId', 'modern');
   };
 
   return (
     <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-200 mb-6 transition-all hover:shadow-xl">
       <div className="flex justify-between items-center mb-5 border-b border-gray-100 pb-3">
         <h3 className="text-sm font-bold text-gray-800 flex items-center uppercase tracking-wider">
-          <Palette size={16} className="mr-2 text-blue-600" /> Resume Design
+          <Palette size={16} className="mr-2 text-blue-600" /> {t.theme}
         </h3>
         <button 
           onClick={handleReset}
@@ -57,6 +67,29 @@ export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange }) => 
         >
           <RotateCcw size={12} className="mr-1" /> Reset
         </button>
+      </div>
+
+       {/* Templates */}
+       <div className="mb-6">
+        <label className="text-xs font-bold text-gray-500 mb-3 block uppercase flex items-center">
+          <Grid size={12} className="mr-1" /> Choose Template
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          {TEMPLATES.map((tpl) => (
+            <button
+              key={tpl.id}
+              onClick={() => onChange('templateId', tpl.id)}
+              className={`px-3 py-4 text-xs rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-2 ${
+                theme.templateId === tpl.id 
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-bold ring-2 ring-blue-500 shadow-md' 
+                  : 'border-gray-200 hover:bg-gray-50 text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <div className={`w-full h-8 rounded border border-dashed ${theme.templateId === tpl.id ? 'border-blue-300 bg-blue-100' : 'border-gray-300 bg-gray-50'}`}></div>
+              {tpl.label}
+            </button>
+          ))}
+        </div>
       </div>
       
       {/* Accent Colors */}
@@ -147,4 +180,4 @@ export const ThemeEditor: React.FC<ThemeEditorProps> = ({ theme, onChange }) => 
       </div>
     </div>
   );
-};
+};
