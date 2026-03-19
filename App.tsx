@@ -107,10 +107,29 @@ const App = () => {
                     setLastSaved(new Date());
                     loadUserResumes();
                 });
-        }, 2000); // Debounce saves
+        }, 1000); // 1s debounce
         return () => clearTimeout(timeout);
     }
-  }, [resumeData, user, activeResumeId]);
+  }, [debouncedResumeData, user, activeResumeId]);
+
+  const handleManualSave = async () => {
+    if (!user) {
+        loginWithGoogle();
+        return;
+    }
+    
+    setLoadingAI('save');
+    try {
+        const id = await saveResumeToCloud(user.uid, resumeData, activeResumeId || undefined);
+        if (id && !activeResumeId) setActiveResumeId(id);
+        setLastSaved(new Date());
+        // Show success toast or something?
+    } catch (e) {
+        console.error("Save failed", e);
+    } finally {
+        setLoadingAI(null);
+    }
+  };
 
   const loadUserResumes = async () => {
     if (user) {
@@ -1114,13 +1133,23 @@ const App = () => {
                       alt="User" 
                       className="w-8 h-8 rounded-full border border-gray-200"
                     />
-                    <button 
+                     <button 
                       onClick={logout}
                       className="p-2 text-gray-500 hover:text-red-600 transition-colors"
                       title="Logout"
                     >
                       <LogOut size={18} />
                     </button>
+                    
+                    <Button 
+                      onClick={handleManualSave}
+                      variant="primary"
+                      size="sm"
+                      icon={loadingAI === 'save' ? <span className="animate-spin text-[10px]">...</span> : <Save size={16} />}
+                      className="hidden md:flex ml-2"
+                    >
+                      {loadingAI === 'save' ? 'Saving...' : 'Save'}
+                    </Button>
                   </div>
                 )}
                 
