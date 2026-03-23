@@ -509,7 +509,22 @@ const App = () => {
                 letterRendering: true,
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: 1200 // Consistent width for capturing
+                windowWidth: 1200, // Consistent width for capturing
+                onclone: (document: Document) => {
+                    const el = document.getElementById('resume-preview');
+                    if (el) {
+                        el.style.transform = 'none';
+                        el.style.overflow = 'visible';
+                        el.classList.remove('overflow-hidden', 'rounded-[36px]');
+                        
+                        let parent = el.parentElement;
+                        while(parent) {
+                            parent.style.overflow = 'visible';
+                            parent.style.height = 'auto';
+                            parent = parent.parentElement;
+                        }
+                    }
+                }
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
         };
