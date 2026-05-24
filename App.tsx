@@ -235,13 +235,49 @@ const App = () => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updatePersonalInfo('profileImage', reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const MAX_SOURCE_BYTES = 5 * 1024 * 1024; // reject very large source files early
+    if (file.size > MAX_SOURCE_BYTES) {
+      alert(
+        resumeData.language === 'en'
+          ? 'Image is too large. Please choose a file under 5MB.'
+          : 'ဓာတ်ပုံ အရွယ်အစား ကြီးလွန်းပါသည်။ 5MB အောက် ဖိုင်ကို ရွေးချယ်ပါ။'
+      );
+      e.target.value = '';
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      // Downscale to a compact avatar so cloud drafts stay well under Firestore's
+      // 1MB document limit (a full-size base64 photo can blow past it and make
+      // cloud saves fail silently).
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX_DIM = 512;
+        const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+        const width = Math.max(1, Math.round(img.width * scale));
+        const height = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          updatePersonalInfo('profileImage', dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        // Keep whichever is smaller (tiny PNGs can grow when re-encoded as JPEG).
+        updatePersonalInfo('profileImage', compressed.length < dataUrl.length ? compressed : dataUrl);
+      };
+      img.onerror = () => updatePersonalInfo('profileImage', dataUrl);
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const removeProfileImage = () => {
@@ -579,13 +615,13 @@ const App = () => {
   };
 
   const stepItems = [
-    { id: WizardStep.PERSONAL, icon: User, label: t.personal, caption: resumeData.language === 'en' ? 'Identity and role targeting' : 'á€¡á€™á€Šá€ºá€”á€¾á€„á€·á€º á€›á€Šá€ºá€™á€¾á€”á€ºá€¸á€‘á€¬á€¸á€žá€Šá€·á€ºá€›á€¬á€‘á€°á€¸' },
-    { id: WizardStep.EXPERIENCE, icon: Briefcase, label: t.experience, caption: resumeData.language === 'en' ? 'Achievement-based history' : 'á€œá€¯á€•á€ºá€„á€”á€ºá€¸á€¡á€á€½á€±á€·á€¡á€€á€¼á€¯á€¶á€”á€¾á€„á€·á€º á€›á€œá€’á€ºá€™á€»á€¬á€¸' },
-    { id: WizardStep.EDUCATION, icon: GraduationCap, label: t.education, caption: resumeData.language === 'en' ? 'Academic signal' : 'á€•á€Šá€¬á€›á€±á€¸ á€”á€±á€¬á€€á€ºá€á€¶' },
-    { id: WizardStep.SKILLS, icon: Wrench, label: t.skills, caption: resumeData.language === 'en' ? 'Capability mapping' : 'á€€á€»á€½á€™á€ºá€¸á€€á€»á€„á€ºá€™á€¾á€¯ á€™á€»á€¬á€¸á€–á€±á€¬á€ºá€•á€¼á€á€¼á€„á€ºá€¸' },
+    { id: WizardStep.PERSONAL, icon: User, label: t.personal, caption: resumeData.language === 'en' ? 'Identity and role targeting' : 'အမည်နှင့် ရည်မှန်းထားသည့်ရာထူး' },
+    { id: WizardStep.EXPERIENCE, icon: Briefcase, label: t.experience, caption: resumeData.language === 'en' ? 'Achievement-based history' : 'လုပ်ငန်းအတွေ့အကြုံနှင့် ရလဒ်များ' },
+    { id: WizardStep.EDUCATION, icon: GraduationCap, label: t.education, caption: resumeData.language === 'en' ? 'Academic signal' : 'ပညာရေး နောက်ခံ' },
+    { id: WizardStep.SKILLS, icon: Wrench, label: t.skills, caption: resumeData.language === 'en' ? 'Capability mapping' : 'ကျွမ်းကျင်မှု များဖော်ပြခြင်း' },
     { id: WizardStep.CUSTOM, icon: Layers, label: t.custom, caption: resumeData.language === 'en' ? 'Awards, projects, certifications' : 'Projects, Awards, Certifications' },
-    { id: WizardStep.THEME, icon: Edit3, label: t.theme, caption: resumeData.language === 'en' ? 'Brand, typography, density' : 'Design, Font á€”á€¾á€„á€·á€º Layout' },
-    { id: WizardStep.FINALIZE, icon: Download, label: t.finalize, caption: resumeData.language === 'en' ? 'Export and delivery' : 'á€‘á€¯á€á€ºá€šá€°á€›á€”á€ºá€”á€¾á€„á€·á€º á€¡á€•á€¼á€®á€¸á€žá€á€ºá€›á€”á€º' },
+    { id: WizardStep.THEME, icon: Edit3, label: t.theme, caption: resumeData.language === 'en' ? 'Brand, typography, density' : 'Design, Font နှင့် Layout' },
+    { id: WizardStep.FINALIZE, icon: Download, label: t.finalize, caption: resumeData.language === 'en' ? 'Export and delivery' : 'ထုတ်ယူရန်နှင့် အပြီးသတ်ရန်' },
   ];
 
   const currentStepMeta = stepItems.find((item) => item.id === step) || stepItems[0];
@@ -601,22 +637,22 @@ const App = () => {
   const activeDocumentName = resumeData.personalInfo.fullName || (resumeData.docType === 'cv' ? 'Untitled CV' : 'Untitled Resume');
   const savedStatusLabel = user
     ? lastSaved
-      ? `${resumeData.language === 'en' ? 'Saved' : 'á€žá€­á€™á€ºá€¸á€•á€¼á€®á€¸'} ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+      ? `${resumeData.language === 'en' ? 'Saved' : 'သိမ်းပြီး'} ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
       : resumeData.language === 'en'
         ? 'Cloud sync ready'
-        : 'Cloud sync á€¡á€†á€„á€ºá€žá€„á€·á€º'
+        : 'Cloud sync အဆင်သင့်'
     : resumeData.language === 'en'
       ? 'Local draft'
       : 'Local draft';
   const missingSignals = [
-    !resumeData.personalInfo.fullName && (resumeData.language === 'en' ? 'Candidate name' : 'á€¡á€™á€Šá€º'),
-    !resumeData.personalInfo.jobTitle && (resumeData.language === 'en' ? 'Target role' : 'á€›á€¬á€‘á€°á€¸'),
+    !resumeData.personalInfo.fullName && (resumeData.language === 'en' ? 'Candidate name' : 'အမည်'),
+    !resumeData.personalInfo.jobTitle && (resumeData.language === 'en' ? 'Target role' : 'ရာထူး'),
     !resumeData.personalInfo.summary && (resumeData.language === 'en' ? 'Professional summary' : 'Summary'),
-    resumeData.experience.length === 0 && (resumeData.language === 'en' ? 'Work experience' : 'á€¡á€á€½á€±á€·á€¡á€€á€¼á€¯á€¶'),
-    resumeData.skills.length === 0 && (resumeData.language === 'en' ? 'Skills' : 'á€€á€»á€½á€™á€ºá€¸á€€á€»á€„á€ºá€™á€¾á€¯á€™á€»á€¬á€¸'),
+    resumeData.experience.length === 0 && (resumeData.language === 'en' ? 'Work experience' : 'အတွေ့အကြုံ'),
+    resumeData.skills.length === 0 && (resumeData.language === 'en' ? 'Skills' : 'ကျွမ်းကျင်မှုများ'),
   ].filter(Boolean) as string[];
   const editorStats = [
-    { label: resumeData.language === 'en' ? 'Completion' : 'á€•á€¼á€®á€¸á€…á€®á€¸á€™á€¾á€¯', value: `${completionPercent}%` },
+    { label: resumeData.language === 'en' ? 'Completion' : 'ပြီးစီးမှု', value: `${completionPercent}%` },
     { label: resumeData.language === 'en' ? 'Experience' : 'Experience', value: `${resumeData.experience.length}` },
     { label: resumeData.language === 'en' ? 'Skills' : 'Skills', value: `${resumeData.skills.length}` },
     { label: resumeData.language === 'en' ? 'Variants' : 'Documents', value: `${Math.max(savedResumes.length, activeResumeId ? 1 : 0)}` },
@@ -665,7 +701,7 @@ const App = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
                 <div>
                    <h2 className="text-2xl font-bold text-gray-800">{t.basics}</h2>
-                   <p className="text-gray-500 text-sm mt-1">{resumeData.language === 'en' ? 'Fill in your details or import from an existing resume.' : 'á€¡á€á€»á€€á€ºá€¡á€œá€€á€ºá€™á€»á€¬á€¸á€€á€­á€¯ á€–á€¼á€Šá€·á€ºá€…á€½á€€á€ºá€•á€« (á€žá€­á€¯á€·á€™á€Ÿá€¯á€á€º) á€›á€¾á€­á€•á€¼á€®á€¸á€žá€¬á€¸ CV á€™á€¾ á€¡á€á€»á€€á€ºá€¡á€œá€€á€ºá€šá€°á€•á€«á‹'}</p>
+                   <p className="text-gray-500 text-sm mt-1">{resumeData.language === 'en' ? 'Fill in your details or import from an existing resume.' : 'အချက်အလက်များကို ဖြည့်စွက်ပါ (သို့မဟုတ်) ရှိပြီးသား CV မှ အချက်အလက်ယူပါ။'}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button 
@@ -797,8 +833,8 @@ const App = () => {
                 value={resumeData.personalInfo.summary}
                 onChange={e => updatePersonalInfo('summary', e.target.value)}
                 placeholder={resumeData.personalInfo.summaryType === 'summary' 
-                  ? (resumeData.language === 'en' ? 'Briefly describe your professional background...' : 'á€žá€„á€ºá á€•á€›á€±á€¬á€ºá€–á€€á€ºá€›á€¾á€„á€ºá€”á€šá€º á€”á€±á€¬á€€á€ºá€á€¶á€€á€­á€¯ á€¡á€€á€»á€‰á€ºá€¸á€á€»á€¯á€¶á€¸ á€–á€±á€¬á€ºá€•á€¼á€•á€«...')
-                  : (resumeData.language === 'en' ? 'State your career goals and what you aim to achieve...' : 'á€žá€„á€ºá á€¡á€žá€€á€ºá€™á€½á€±á€¸á€á€™á€ºá€¸á€€á€»á€±á€¬á€„á€ºá€¸ á€›á€Šá€ºá€™á€¾á€”á€ºá€¸á€á€»á€€á€ºá€™á€»á€¬á€¸á€€á€­á€¯ á€–á€±á€¬á€ºá€•á€¼á€•á€«...')}
+                  ? (resumeData.language === 'en' ? 'Briefly describe your professional background...' : 'သင်၏ ပရော်ဖက်ရှင်နယ် နောက်ခံကို အကျဉ်းချုံး ဖော်ပြပါ...')
+                  : (resumeData.language === 'en' ? 'State your career goals and what you aim to achieve...' : 'သင်၏ အသက်မွေးဝမ်းကျောင်း ရည်မှန်းချက်များကို ဖော်ပြပါ...')}
               />
             </div>
           </div>
@@ -861,7 +897,7 @@ const App = () => {
                         className="flex items-center text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition-colors"
                       >
                         <Sparkles size={14} className="mr-1" />
-                        {loadingAI === `grammar-${exp.id}` ? 'Checking...' : (resumeData.language === 'en' ? 'Check Grammar' : 'á€žá€’á€¹á€’á€«á€…á€…á€ºá€›á€”á€º')}
+                        {loadingAI === `grammar-${exp.id}` ? 'Checking...' : (resumeData.language === 'en' ? 'Check Grammar' : 'သဒ္ဒါစစ်ရန်')}
                       </button>
                       <button 
                         onClick={() => handleEnhanceExperience(exp.id)}
@@ -877,7 +913,7 @@ const App = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[120px]"
                     value={exp.description}
                     onChange={e => updateExperience(exp.id, 'description', e.target.value)}
-                    placeholder="â€¢ Developed new features..."
+                    placeholder="• Developed new features..."
                   />
                 </div>
               </div>
@@ -954,7 +990,7 @@ const App = () => {
             </div>
 
             <div className="flex flex-col gap-4 min-h-[100px] p-4 bg-gray-50 rounded-lg border border-gray-200">
-              {resumeData.skills.length === 0 && <span className="text-gray-400 italic">{resumeData.language === 'en' ? 'No skills added yet.' : 'á€€á€»á€½á€™á€ºá€¸á€€á€»á€„á€ºá€™á€¾á€¯á€™á€»á€¬á€¸ á€™á€‘á€Šá€·á€ºá€›á€žá€±á€¸á€•á€«á‹'}</span>}
+              {resumeData.skills.length === 0 && <span className="text-gray-400 italic">{resumeData.language === 'en' ? 'No skills added yet.' : 'ကျွမ်းကျင်မှုများ မထည့်ရသေးပါ။'}</span>}
               {resumeData.skills.map(skill => (
                 <div key={skill.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
                   <span className="font-medium text-gray-800">{skill.name}</span>
@@ -1062,14 +1098,14 @@ const App = () => {
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-2">{t.ready}</h2>
               <p className="text-gray-600 max-w-md mx-auto">
-                {resumeData.language === 'en' ? 'Review your document in the preview panel. You can download it as a PDF or export as text for ATS checking.' : 'á€žá€„á€·á€ºá CV á€€á€­á€¯ Preview á€™á€¾á€¬ á€…á€…á€ºá€†á€±á€¸á€€á€¼á€Šá€·á€ºá€”á€­á€¯á€„á€ºá€•á€«á€žá€Šá€ºá‹ PDF á€¡á€–á€¼á€…á€º á€’á€±á€«á€„á€ºá€¸á€œá€¯á€’á€ºá€œá€¯á€•á€ºá€”á€­á€¯á€„á€ºá€žá€œá€­á€¯ á€…á€¬á€žá€¬á€¸á€žá€®á€¸á€žá€”á€·á€ºá€œá€Šá€ºá€¸ á€‘á€¯á€á€ºá€šá€°á€”á€­á€¯á€„á€ºá€•á€«á€žá€Šá€ºá‹'}
+                {resumeData.language === 'en' ? 'Review your document in the preview panel. You can download it as a PDF or export as text for ATS checking.' : 'သင့်၏ CV ကို Preview မှာ စစ်ဆေးကြည့်နိုင်ပါသည်။ PDF အဖြစ် ဒေါင်းလုဒ်လုပ်နိုင်သလို စာသားသီးသန့်လည်း ထုတ်ယူနိုင်ပါသည်။'}
               </p>
             </div>
             
             {/* Section Reordering */}
             <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 max-w-xl mx-auto shadow-sm">
                 <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest mb-4 flex items-center justify-center">
-                  <Layers size={16} className="mr-2 text-blue-600" /> {resumeData.language === 'en' ? 'Reorder Sections' : 'á€¡á€•á€­á€¯á€„á€ºá€¸á€™á€»á€¬á€¸á€€á€­á€¯ á€¡á€…á€®á€¡á€…á€‰á€º á€•á€¼á€”á€ºá€…á€®á€›á€”á€º'}
+                  <Layers size={16} className="mr-2 text-blue-600" /> {resumeData.language === 'en' ? 'Reorder Sections' : 'အပိုင်းများကို အစီအစဉ် ပြန်စီရန်'}
                 </h3>
                 <div className="space-y-2">
                   {resumeData.sectionOrder.map((sectionId, index) => (
@@ -1108,7 +1144,7 @@ const App = () => {
                 variant="primary" 
                 className="px-8 py-4 text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all flex items-center justify-center"
               >
-                {isExporting ? (resumeData.language === 'en' ? 'Downloading...' : 'á€’á€±á€«á€„á€ºá€¸á€œá€¯á€’á€ºá€œá€¯á€•á€ºá€”á€±á€žá€Šá€º...') : (
+                {isExporting ? (resumeData.language === 'en' ? 'Downloading...' : 'ဒေါင်းလုဒ်လုပ်နေသည်...') : (
                   <><Download className="mr-2" size={24} /> {t.downloadPDF}</>
                 )}
               </Button>
@@ -1128,10 +1164,10 @@ const App = () => {
                </button>
                
                <div className="border-t border-gray-200 pt-8 mt-8">
-                  <h3 className="text-xl font-bold mb-4">{resumeData.language === 'en' ? 'Bonus: AI Cover Letter' : 'á€¡á€•á€­á€¯á€†á€±á€¬á€„á€ºá€¸- AI á€–á€¼á€„á€·á€º Cover Letter á€›á€±á€¸á€›á€”á€º'}</h3>
+                  <h3 className="text-xl font-bold mb-4">{resumeData.language === 'en' ? 'Bonus: AI Cover Letter' : 'အပိုဆောင်း- AI ဖြင့် Cover Letter ရေးရန်'}</h3>
                   {!coverLetter ? (
                     <Button onClick={handleGenerateCoverLetter} variant="ai" isLoading={loadingAI === 'cover-letter'}>
-                      {resumeData.language === 'en' ? 'Generate Cover Letter' : 'Cover Letter á€‘á€¯á€á€ºá€šá€°á€›á€”á€º'}
+                      {resumeData.language === 'en' ? 'Generate Cover Letter' : 'Cover Letter ထုတ်ယူရန်'}
                     </Button>
                   ) : (
                     <div className="bg-white p-6 rounded-xl border border-gray-200 text-left relative group">
@@ -1197,7 +1233,7 @@ const App = () => {
                   </div>
                   <h1 className="mt-2 truncate text-2xl font-black tracking-tight text-slate-950">CVWizard</h1>
                   <p className="truncate text-sm text-slate-500">
-                    {activeDocumentName} Â· {savedStatusLabel}
+                    {activeDocumentName} · {savedStatusLabel}
                   </p>
                 </div>
               </div>
